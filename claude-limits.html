@@ -336,6 +336,17 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
       <p class="hint">Default 168 hours (7 days).</p>
     </div>
     <div class="set">
+      <label for="s-grid">Session resets land on</label>
+      <select id="s-grid">
+        <option value="10">Every 10 minutes (:00, :10, :20 …)</option>
+        <option value="5">Every 5 minutes</option>
+        <option value="15">Every 15 minutes</option>
+        <option value="30">Every 30 minutes</option>
+        <option value="1">Any minute — don't snap</option>
+      </select>
+      <p class="hint">Claude's session windows open on the 10-minute mark, so a computed reset of 11:21 PM is really 11:20 PM. Readings snap to the nearest mark.</p>
+    </div>
+    <div class="set">
       <label>Weekly reset slot</label>
       <div class="set-row">
         <select id="w-day">
@@ -384,7 +395,7 @@ function defaultState(){
   return {
     version:1,
     sample:false,
-    settings:{ weekly_reset_day:2, weekly_reset_time:"10:00" },
+    settings:{ weekly_reset_day:2, weekly_reset_time:"10:00", session_reset_grid:10 },
     trackers:{ session:blankTracker(5), weekly:blankTracker(168) }
   };
 }
@@ -406,6 +417,7 @@ function normalizeState(obj){
   if(obj.settings){
     if(typeof obj.settings.weekly_reset_day === "number") base.settings.weekly_reset_day = obj.settings.weekly_reset_day;
     if(typeof obj.settings.weekly_reset_time === "string") base.settings.weekly_reset_time = obj.settings.weekly_reset_time;
+    if(isNum(obj.settings.session_reset_grid) && obj.settings.session_reset_grid >= 1) base.settings.session_reset_grid = obj.settings.session_reset_grid;
   }
   base.sample = !!obj.sample;
   KEYS.forEach(function(k){
@@ -463,12 +475,28 @@ function save(){
 function resetTimeFrom(capturedAt, minutes){
   return new Date(new Date(capturedAt).getTime() + minutes*60000);
 }
+/* minute boundaries are identical in every time zone, so this is offset-safe */
+function roundToMinute(date){ return new Date(Math.round(new Date(date).getTime()/60000)*60000); }
+
+/* Claude's session windows open on the 10-minute mark, so a session reset lands on
+   one too. A hand-typed countdown that computes to 23:21 (or 23:18) is really 23:20. */
+function snapSessionReset(raw, from){
+  var g = state.settings.session_reset_grid || 1;
+  if(g <= 1) return roundToMinute(raw);
+  var d = new Date(raw);
+  d.setSeconds(0,0);
+  d.setMinutes(Math.round(d.getMinutes()/g)*g);
+  if(from && d.getTime() < from.getTime() && new Date(raw).getTime() >= from.getTime()){
+    d.setMinutes(d.getMinutes() + g);   /* never snap a live window into the past */
+  }
+  return d;
+}
 function stats(t){
   if(!t.last_logged_at || !isNum(t.time_until_reset_minutes) || !isNum(t.percent_used)) return null;
   var durMin = t.duration_hours * 60;
   var left = t.time_until_reset_minutes;
   var loggedAt = new Date(t.last_logged_at);
-  var reset = resetTimeFrom(loggedAt, left);
+  var reset = roundToMinute(resetTimeFrom(loggedAt, left));
   var elapsedMin = durMin - left;                       // elapsed_time, in minutes
   var elapsedPct = durMin > 0 ? (elapsedMin / durMin) * 100 : 0;
   var pace = elapsedPct > 0 ? (t.percent_used / elapsedPct) : null;
@@ -846,11 +874,22 @@ function formValues(panel){
 }
 function totalMinutes(v){ return (v.days||0)*1440 + (v.hours||0)*60 + (v.minutes||0); }
 
-/* minutes until reset for a pending entry: sliders on the session card,
-   the configured weekly slot on the weekly one */
-function pendingMinutes(key, v, from){
-  if(key !== "weekly") return totalMinutes(v);
-  return Math.max(0, Math.round((nextSlotFromNow(from) - from.getTime()) / 60000));
+/* Where a pending entry's window actually ends: the weekly slot on the weekly card,
+   the sliders snapped to the session grid on the other. `mins` is always derived from
+   that reset, so reset = capture stamp + mins holds exactly. */
+function pendingReset(key, v, from){
+  if(key === "weekly"){
+    var slot = new Date(nextSlotFromNow(from));
+    return { reset:slot, mins:Math.max(0, Math.round((slot - from)/60000)), raw:slot, snapped:false };
+  }
+  var raw = roundToMinute(resetTimeFrom(from, totalMinutes(v)));
+  var reset = snapSessionReset(raw, from);
+  return {
+    reset: reset,
+    mins: Math.round((reset - from)/60000),
+    raw: raw,
+    snapped: reset.getTime() !== raw.getTime()   /* only flag a real change of minute */
+  };
 }
 
 function syncForm(panel){
@@ -871,8 +910,8 @@ function syncForm(panel){
   });
 
   var now = new Date();
-  var mins = pendingMinutes(key, v, now);
-  var reset = key === "weekly" ? new Date(nextSlotFromNow(now)) : resetTimeFrom(now, mins);
+  var pending = pendingReset(key, v, now);
+  var mins = pending.mins, reset = pending.reset;
   var durMin = t.duration_hours * 60;
   var elapsedPct = durMin > 0 ? ((durMin - mins)/durMin)*100 : 0;
   var pace = elapsedPct > 0 ? (v.percent / elapsedPct) : null;
@@ -891,7 +930,11 @@ function syncForm(panel){
     ? "Longer than the " + esc(fmtDuration(durMin)) + " window — no pace to compute."
     : "Window elapsed <b>" + Math.round(elapsedPct) + "%</b> · pace <b>" +
       (pace === null || !isFinite(pace) ? "n/a" : pace.toFixed(2) + "×") + "</b>";
-  preview.innerHTML = line1 + "<br>" + line2;
+  var line3 = pending.snapped
+    ? "<br>Snapped from " + esc(fmtClock(pending.raw)) + " to the " +
+      (state.settings.session_reset_grid || 10) + "-minute mark."
+    : "";
+  preview.innerHTML = line1 + "<br>" + line2 + line3;
 }
 
 function openForm(panel){
@@ -926,22 +969,22 @@ function closeForm(panel){
 
 function submitEntry(panel){
   var key = panel.getAttribute("data-key");
-  var t = state.trackers[key];
   var v = formValues(panel);
+  clearSampleData();
+  var t = state.trackers[key];
   var now = new Date();                       /* the auto-stamp: capture time */
-  var mins = pendingMinutes(key, v, now);
+  var pending = pendingReset(key, v, now);
   var entry = {
     timestamp: now.toISOString(),
-    time_until_reset_minutes: mins,
+    time_until_reset_minutes: pending.mins,
     percent_used: clamp(v.percent, 0, 100),
-    computed_reset_time: resetTimeFrom(now, mins).toISOString()
+    computed_reset_time: pending.reset.toISOString()
   };
   t.last_logged_at = entry.timestamp;
   t.time_until_reset_minutes = entry.time_until_reset_minutes;
   t.percent_used = entry.percent_used;
   t.history.push(entry);
   t.history = sortHistory(t.history);
-  if(state.sample) state.sample = false;
   save();
   closeForm(panel);
   render();
@@ -972,6 +1015,7 @@ function importData(raw){
   try { incoming = JSON.parse(raw); }
   catch(e){ toast("That file isn't valid JSON — nothing was changed."); return; }
   if(!incoming || !incoming.trackers){ toast("No tracker data in that file — nothing was changed."); return; }
+  clearSampleData();
 
   var added = 0, dupes = 0, currentsUpdated = [];
 
@@ -1000,7 +1044,6 @@ function importData(raw){
     }
   });
 
-  if(added > 0) state.sample = false;
   save();
   render();
   var msg = "Merged: " + added + " new " + (added === 1 ? "reading" : "readings") +
@@ -1012,20 +1055,51 @@ function importData(raw){
 
 /* ---------------- sample data ---------------- */
 
+/* drop the made-up readings the moment real data arrives, keeping any settings
+   the user has already changed */
+function clearSampleData(){
+  if(!state.sample) return;
+  var keep = state.settings;
+  var sDur = state.trackers.session.duration_hours, wDur = state.trackers.weekly.duration_hours;
+  state = defaultState();
+  state.settings = keep;
+  state.trackers.session.duration_hours = sDur;
+  state.trackers.weekly.duration_hours = wDur;
+}
+
 function loadSample(){
-  var now = Date.now();
-  var mk = function(minsAgo, left, pct){
-    var ts = new Date(now - minsAgo*60000);
-    return { timestamp: ts.toISOString(), time_until_reset_minutes: left, percent_used: pct,
-             computed_reset_time: new Date(ts.getTime() + left*60000).toISOString() };
-  };
+  var now = new Date();
   state = defaultState();
   state.sample = true;
-  state.trackers.session.history = [ mk(214, 268, 9), mk(151, 205, 26), mk(78, 132, 55), mk(26, 84, 71) ];
-  state.trackers.weekly.history = [ mk(4310, 8330, 12), mk(2870, 6890, 27), mk(1390, 5410, 44), mk(26, 4774, 58) ];
+
+  var mk = function(left, pct, anchor){
+    var ts = new Date(anchor.getTime() - left*60000);
+    return { timestamp: ts.toISOString(), time_until_reset_minutes: left, percent_used: pct,
+             computed_reset_time: anchor.toISOString() };
+  };
+
+  /* four readings inside one live session window, all counting down to the same
+     grid-aligned reset, so the sample shows a real pace curve */
+  var sReset = snapSessionReset(new Date(now.getTime() + 58*60000), now);
+  var sDur = state.trackers.session.duration_hours * 60;
+  [264, 203, 126, Math.round((sReset - now)/60000)].forEach(function(left, i){
+    if(left <= sDur) state.trackers.session.history.push(mk(left, [9,26,55,71][i], sReset));
+  });
+
+  /* and four inside the current weekly window, counting down to the configured slot */
+  var wReset = new Date(nextSlotFromNow(now));
+  var wDur = state.trackers.weekly.duration_hours * 60;
+  var wLeft = Math.max(0, Math.round((wReset - now)/60000));
+  var wElapsed = Math.max(60, wDur - wLeft);
+  [0.15, 0.42, 0.71, 1].forEach(function(f, i){
+    var left = Math.round(wDur - wElapsed*f);
+    if(left <= wDur) state.trackers.weekly.history.push(mk(left, [12,27,44,58][i], wReset));
+  });
+
   KEYS.forEach(function(k){
     var t = state.trackers[k];
     var last = t.history[t.history.length-1];
+    if(!last) return;
     t.last_logged_at = last.timestamp;
     t.time_until_reset_minutes = last.time_until_reset_minutes;
     t.percent_used = last.percent_used;
@@ -1114,6 +1188,7 @@ document.getElementById("btn-settings").addEventListener("click", function(){
   document.getElementById("s-dur").value = state.trackers.session.duration_hours;
   document.getElementById("w-dur").value = state.trackers.weekly.duration_hours;
   document.getElementById("w-day").value = String(clamp(state.settings.weekly_reset_day,0,6));
+  document.getElementById("s-grid").value = String(state.settings.session_reset_grid || 10);
   document.getElementById("w-time").value = state.settings.weekly_reset_time;
   if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","");
 });
@@ -1126,6 +1201,7 @@ dlg.addEventListener("change", function(ev){
   if(isNum(wd) && wd > 0) state.trackers.weekly.duration_hours = wd;
   state.settings.weekly_reset_day = clamp(parseInt(document.getElementById("w-day").value,10) || 0, 0, 6);
   state.settings.weekly_reset_time = document.getElementById("w-time").value || "10:00";
+  state.settings.session_reset_grid = clamp(parseInt(document.getElementById("s-grid").value,10) || 10, 1, 60);
   save();
   /* slider ranges depend on window length, so rebuild the panels */
   grid.innerHTML = KEYS.map(panelHTML).join("");
@@ -1141,7 +1217,7 @@ document.getElementById("btn-wipe").addEventListener("click", function(){
   toast("All data deleted.");
 });
 document.getElementById("btn-clear-sample").addEventListener("click", function(){
-  state = defaultState();
+  clearSampleData();
   save(); render();
   toast("Sample data cleared. The trackers are empty and ready.");
 });
