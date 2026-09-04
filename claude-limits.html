@@ -185,7 +185,24 @@ button{font:inherit;cursor:pointer}
   font-family:var(--mono);font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;
   letter-spacing:-.02em;
 }
-.ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--ink-3);margin-top:-4px}
+.ticks{position:relative;height:26px;margin-top:-6px}
+.tick{
+  position:absolute;top:0;transform:translateX(-50%);
+  font-family:var(--mono);font-size:10px;font-variant-numeric:tabular-nums;line-height:1;
+  color:var(--ink-3);background:none;border:0;padding:6px 5px;border-radius:6px;
+}
+.tick::before{
+  content:"";position:absolute;top:-2px;left:50%;width:1px;height:4px;
+  background:var(--hair);transform:translateX(-50%);
+}
+.tick:hover{color:var(--ink)}
+.tick.on{color:var(--accent);font-weight:600;background:var(--accent-soft)}
+.tick.on::before{background:var(--accent)}
+.form-hint{
+  margin:-4px 0 0;font-size:12px;line-height:1.45;color:var(--ink-2);
+  border-left:2.5px solid var(--hair);padding-left:10px;
+}
+.form-hint b{font-family:var(--mono);font-weight:600;color:var(--ink)}
 input[type=range]{
   -webkit-appearance:none;appearance:none;background:transparent;width:100%;height:40px;margin:0;
   --fp:0;
@@ -220,7 +237,7 @@ input[type=range]::-moz-range-thumb{
 .spark{margin-bottom:6px}
 .spark svg{display:block;width:100%;height:auto}
 .spark text{fill:var(--ink-3);font-family:var(--mono);font-size:9px;font-variant-numeric:tabular-nums}
-.spark .band{fill:var(--neutral-pace);opacity:.1}
+.spark .band{fill:var(--neutral-pace);opacity:.07}
 .spark .base{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:3 3}
 .spark .line{fill:none;stroke:var(--ink-2);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;opacity:.75}
 .spark .dot{fill:var(--ink-2)}
@@ -236,8 +253,10 @@ input[type=range]::-moz-range-thumb{
   font-variant-numeric:tabular-nums;
 }
 .rows li:first-child{border-top:0}
-.h-time{color:var(--ink-2);grid-column:1}
-.h-main{color:var(--ink);font-weight:500;grid-column:1/-1;font-size:11.5px}
+.h-time{color:var(--ink-2);grid-column:1;grid-row:1}
+.rows .chip{grid-column:2;grid-row:1;justify-self:end}
+.rows .del{grid-column:3;grid-row:1}
+.h-main{color:var(--ink);font-weight:500;grid-column:1/-1;grid-row:2;font-size:11.5px}
 .h-main em{font-style:normal;color:var(--ink-3);font-weight:400}
 .del{
   border:0;background:transparent;color:var(--ink-3);font-size:15px;line-height:1;padding:3px 5px;
@@ -286,10 +305,7 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
       <p class="sub">Claude Pro usage, logged by hand and paced against the clock.</p>
     </div>
     <div class="tools">
-      <button class="btn" id="btn-export">Export</button>
-      <button class="btn" id="btn-import">Import</button>
-      <button class="btn" id="btn-settings">Settings</button>
-      <input type="file" id="file-input" accept="application/json,.json" hidden>
+      <button class="btn" id="btn-settings">Settings &amp; data</button>
     </div>
   </header>
 
@@ -331,6 +347,15 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
         <input type="time" id="w-time">
       </div>
       <p class="hint">Your computed weekly reset is checked against this slot, and any drift is shown on the card.</p>
+    </div>
+    <div class="set">
+      <label>Your data</label>
+      <div class="set-row">
+        <button class="btn" id="btn-export">Export JSON</button>
+        <button class="btn" id="btn-import">Import JSON</button>
+      </div>
+      <p class="hint">Import merges into what's already here: duplicate timestamps are skipped, and current values only change if the imported reading is newer.</p>
+      <input type="file" id="file-input" accept="application/json,.json" hidden>
     </div>
     <button class="btn danger" id="btn-wipe">Delete all data</button>
   </div>
@@ -531,8 +556,8 @@ function scheduledSlot(target){
   var prev = new Date(next.getTime() - 7*86400000);
   return (target - prev) < (next - target) ? prev : next;
 }
-function nextSlotFromNow(){
-  var now = new Date();
+function nextSlotFromNow(from){
+  var now = from ? new Date(from) : new Date();
   var parts = (state.settings.weekly_reset_time || "10:00").split(":");
   var d = new Date(now);
   d.setHours(clamp(parseInt(parts[0],10)||0,0,23), clamp(parseInt(parts[1],10)||0,0,59), 0, 0);
@@ -551,9 +576,19 @@ function sliderCfg(t){
 
 /* ---------------- panel markup ---------------- */
 
+function tickScale(name, max, step, unit){
+  var out = '<div class="ticks">';
+  for(var v = 0; v <= max; v += step){
+    var pos = "calc(16px + " + (max ? v/max : 0) + " * (100% - 32px))";
+    out += '<button type="button" class="tick" data-tick="' + name + '" data-v="' + v + '" style="left:' + pos + '"' +
+           ' aria-label="Set ' + name + ' to ' + v + unit + '">' + v + '</button>';
+  }
+  return out + '</div>';
+}
+
 function panelHTML(key){
   var t = state.trackers[key], cfg = sliderCfg(t), m = META[key];
-  var f = function(name, label, max, unit){
+  var f = function(name, label, max, unit, step){
     return '' +
       '<div class="field">' +
         '<div class="field-head">' +
@@ -561,9 +596,19 @@ function panelHTML(key){
           '<output id="' + key + '-' + name + '-out" for="' + key + '-' + name + '">0' + unit + '</output>' +
         '</div>' +
         '<input type="range" id="' + key + '-' + name + '" data-slider="' + name + '" min="0" max="' + max + '" step="1" value="0">' +
-        '<div class="ticks"><span>0</span><span>' + max + unit + '</span></div>' +
+        tickScale(name, max, step, unit) +
       '</div>';
   };
+
+  /* the weekly reset comes from the slot in Settings, so that card only logs a percentage */
+  var timeFields = key === "weekly"
+    ? '<p class="form-hint" data-slot="slothint"></p>'
+    : f("hours", "Hours left", cfg.hours, "h", 1) + f("minutes", "Minutes left", 59, "m", 10);
+
+  var formIntro = key === "weekly"
+    ? "Just the percentage. Time until reset comes from your weekly slot, and the moment you tap Save anchors the maths."
+    : "Read the numbers off Claude, then correct the sliders. The sliders open at what the countdown should read right now.";
+
   return '' +
   '<section class="panel" data-key="' + key + '">' +
     '<div class="panel-head">' +
@@ -587,13 +632,9 @@ function panelHTML(key){
     '<button class="btn primary wide" data-act="open-form">Log new entry</button>' +
 
     '<form class="logform" data-slot="form" hidden>' +
-      '<p class="form-title">New reading' +
-        '<span>Read the numbers off Claude, then set the sliders. The time you tap Save is what anchors the maths.</span>' +
-      '</p>' +
-      (cfg.days ? f("days","Days left", cfg.days, "d") : "") +
-      f("hours","Hours left", cfg.hours, "h") +
-      f("minutes","Minutes left", cfg.minutes, "m") +
-      f("percent","Percent used", 100, "%") +
+      '<p class="form-title">New reading<span>' + formIntro + '</span></p>' +
+      timeFields +
+      f("percent", "Percent used", 100, "%", 10) +
       '<div class="preview" data-slot="preview"></div>' +
       '<div class="form-actions">' +
         '<button type="button" class="btn" data-act="cancel">Cancel</button>' +
@@ -805,50 +846,71 @@ function formValues(panel){
 }
 function totalMinutes(v){ return (v.days||0)*1440 + (v.hours||0)*60 + (v.minutes||0); }
 
+/* minutes until reset for a pending entry: sliders on the session card,
+   the configured weekly slot on the weekly one */
+function pendingMinutes(key, v, from){
+  if(key !== "weekly") return totalMinutes(v);
+  return Math.max(0, Math.round((nextSlotFromNow(from) - from.getTime()) / 60000));
+}
+
 function syncForm(panel){
   var key = panel.getAttribute("data-key");
   var t = state.trackers[key];
   var v = formValues(panel);
+
   panel.querySelectorAll("input[data-slider]").forEach(function(inp){
     var name = inp.getAttribute("data-slider");
     var unit = name === "days" ? "d" : name === "hours" ? "h" : name === "minutes" ? "m" : "%";
     var out = panel.querySelector("#" + key + "-" + name + "-out");
     if(out) out.textContent = inp.value + unit;
     inp.style.setProperty("--fp", String((parseInt(inp.value,10) / (parseInt(inp.max,10) || 1)) * 100));
+    var field = inp.closest(".field");
+    if(field) field.querySelectorAll(".tick").forEach(function(tk){
+      tk.classList.toggle("on", tk.getAttribute("data-v") === inp.value);
+    });
   });
 
-  var mins = totalMinutes(v);
   var now = new Date();
-  var reset = resetTimeFrom(now, mins);
+  var mins = pendingMinutes(key, v, now);
+  var reset = key === "weekly" ? new Date(nextSlotFromNow(now)) : resetTimeFrom(now, mins);
   var durMin = t.duration_hours * 60;
   var elapsedPct = durMin > 0 ? ((durMin - mins)/durMin)*100 : 0;
   var pace = elapsedPct > 0 ? (v.percent / elapsedPct) : null;
-  var preview = panel.querySelector('[data-slot="preview"]');
-  var line1 = "Save now → resets <b>" + esc(fmtWhen(reset)) + "</b> <span>(" + esc(fmtDuration(mins)) + " from the moment you tap Save)</span>";
-  var line2;
-  if(mins > durMin){
-    line2 = "Longer than the " + esc(fmtDuration(durMin)) + " window — no pace to compute.";
-  } else {
-    line2 = "Window elapsed <b>" + Math.round(elapsedPct) + "%</b> · pace <b>" + (pace === null || !isFinite(pace) ? "n/a" : pace.toFixed(2) + "×") + "</b>";
+
+  var slotHint = panel.querySelector('[data-slot="slothint"]');
+  if(slotHint){
+    slotHint.innerHTML = "Resets " + esc(fmtWhen(reset)) + " — your <b>" +
+      esc(DAY_ABBR[clamp(state.settings.weekly_reset_day,0,6)] + " " + state.settings.weekly_reset_time) +
+      "</b> slot, <b>" + esc(fmtDuration(mins)) + "</b> away. Change it in Settings.";
   }
+
+  var preview = panel.querySelector('[data-slot="preview"]');
+  var line1 = "Save now → resets <b>" + esc(fmtWhen(reset)) + "</b> (" + esc(fmtDuration(mins)) +
+              (key === "weekly" ? " away)" : " from the moment you tap Save)");
+  var line2 = mins > durMin
+    ? "Longer than the " + esc(fmtDuration(durMin)) + " window — no pace to compute."
+    : "Window elapsed <b>" + Math.round(elapsedPct) + "%</b> · pace <b>" +
+      (pace === null || !isFinite(pace) ? "n/a" : pace.toFixed(2) + "×") + "</b>";
   preview.innerHTML = line1 + "<br>" + line2;
 }
 
 function openForm(panel){
   var key = panel.getAttribute("data-key");
   var t = state.trackers[key];
+  var s = stats(t);
   var form = panel.querySelector('[data-slot="form"]');
   var btn = panel.querySelector('[data-act="open-form"]');
 
-  /* seed the sliders from the last reading so a repeat log is a small nudge */
-  var seedMins = isNum(t.time_until_reset_minutes) ? t.time_until_reset_minutes : Math.round(t.duration_hours*60*0.5);
-  var seedPct = isNum(t.percent_used) ? t.percent_used : 0;
+  /* sliders open at what the countdown should read right now: the computed reset
+     time minus this moment. A fresh window (or no data) opens at the full window. */
+  var seedMins = (s && s.leftNow > 0) ? s.leftNow : Math.round(t.duration_hours * 60);
+  var seedPct = (s && !s.expired && isNum(t.percent_used)) ? t.percent_used : 0;
+
   var setSlider = function(name, val){
     var inp = panel.querySelector("#" + key + "-" + name);
-    if(inp) inp.value = clamp(val, 0, parseInt(inp.max,10));
+    if(inp) inp.value = clamp(Math.round(val), 0, parseInt(inp.max,10));
   };
-  setSlider("days", Math.floor(seedMins/1440));
-  setSlider("hours", panel.querySelector("#" + key + "-days") ? Math.floor((seedMins%1440)/60) : Math.floor(seedMins/60));
+  setSlider("hours", Math.floor(seedMins/60));
   setSlider("minutes", seedMins % 60);
   setSlider("percent", seedPct);
 
@@ -866,8 +928,8 @@ function submitEntry(panel){
   var key = panel.getAttribute("data-key");
   var t = state.trackers[key];
   var v = formValues(panel);
-  var mins = totalMinutes(v);
   var now = new Date();                       /* the auto-stamp: capture time */
+  var mins = pendingMinutes(key, v, now);
   var entry = {
     timestamp: now.toISOString(),
     time_until_reset_minutes: mins,
@@ -996,6 +1058,13 @@ grid.addEventListener("input", function(ev){
   if(inp.matches("input[data-slider]")) syncForm(inp.closest(".panel"));
 });
 grid.addEventListener("click", function(ev){
+  var tick = ev.target.closest("[data-tick]");
+  if(tick){
+    var tp = tick.closest(".panel");
+    var inp = tp.querySelector("#" + tp.getAttribute("data-key") + "-" + tick.getAttribute("data-tick"));
+    if(inp){ inp.value = tick.getAttribute("data-v"); syncForm(tp); }
+    return;
+  }
   var btn = ev.target.closest("[data-act]");
   if(!btn) return;
   var panel = btn.closest(".panel");
@@ -1031,7 +1100,11 @@ fileInput.addEventListener("change", function(){
   var file = fileInput.files && fileInput.files[0];
   if(!file) return;
   var reader = new FileReader();
-  reader.onload = function(){ importData(String(reader.result)); fileInput.value = ""; };
+  reader.onload = function(){
+    importData(String(reader.result));
+    fileInput.value = "";
+    if(dlg.open){ dlg.close ? dlg.close() : dlg.removeAttribute("open"); }
+  };
   reader.onerror = function(){ toast("Couldn't read that file."); fileInput.value = ""; };
   reader.readAsText(file);
 });
@@ -1045,7 +1118,8 @@ document.getElementById("btn-settings").addEventListener("click", function(){
   if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","");
 });
 document.getElementById("btn-close-settings").addEventListener("click", function(){ dlg.close ? dlg.close() : dlg.removeAttribute("open"); });
-dlg.addEventListener("change", function(){
+dlg.addEventListener("change", function(ev){
+  if(ev.target.id === "file-input") return;
   var sd = parseFloat(document.getElementById("s-dur").value);
   var wd = parseFloat(document.getElementById("w-dur").value);
   if(isNum(sd) && sd > 0) state.trackers.session.duration_hours = sd;
