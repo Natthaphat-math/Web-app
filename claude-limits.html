@@ -1,0 +1,1094 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Limit Pace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#EFF1F0; --surface:#FBFBFA; --sunk:#E5E9E8; --hair:#D3DAD8; --hair-soft:#E2E7E6;
+  --ink:#101615; --ink-2:#4E5A58; --ink-3:#798583;
+  --accent:#0B6B5D; --accent-ink:#FFFFFF; --accent-soft:#DCEBE7;
+  --cool:#3E7FA6; --cool-soft:#DCE9F1;
+  --neutral-pace:#0B6B5D; --neutral-soft:#DCEBE7;
+  --warm:#B07A0B; --warm-soft:#F5E8CC;
+  --hot:#B03826; --hot-soft:#F6DDD8;
+  --track:#DDE3E1; --shadow:0 1px 2px rgba(16,22,21,.05),0 6px 18px -12px rgba(16,22,21,.28);
+  --sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+  --display:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1211; --surface:#161D1C; --sunk:#1D2625; --hair:#28322F; --hair-soft:#212B29;
+    --ink:#E7EDEB; --ink-2:#9AA8A5; --ink-3:#75827F;
+    --accent:#31BFA6; --accent-ink:#06201C; --accent-soft:#123029;
+    --cool:#74B4D8; --cool-soft:#132734;
+    --neutral-pace:#31BFA6; --neutral-soft:#123029;
+    --warm:#E3A93C; --warm-soft:#33280F;
+    --hot:#E8705C; --hot-soft:#361B16;
+    --track:#242E2C; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px -14px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1211; --surface:#161D1C; --sunk:#1D2625; --hair:#28322F; --hair-soft:#212B29;
+  --ink:#E7EDEB; --ink-2:#9AA8A5; --ink-3:#75827F;
+  --accent:#31BFA6; --accent-ink:#06201C; --accent-soft:#123029;
+  --cool:#74B4D8; --cool-soft:#132734;
+  --neutral-pace:#31BFA6; --neutral-soft:#123029;
+  --warm:#E3A93C; --warm-soft:#33280F;
+  --hot:#E8705C; --hot-soft:#361B16;
+  --track:#242E2C; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px -14px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--sans);
+  font-size:15px; line-height:1.5;
+  padding:18px 14px calc(56px + env(safe-area-inset-bottom));
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:1060px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+
+/* ---- masthead ---- */
+.masthead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 16px;justify-content:space-between}
+.masthead h1{
+  font-family:var(--display);font-weight:700;font-size:23px;letter-spacing:-.015em;
+  margin:0;text-wrap:balance;
+}
+.masthead .sub{margin:2px 0 0;color:var(--ink-2);font-size:12.5px}
+.tools{display:flex;gap:7px;flex-wrap:wrap}
+
+/* ---- buttons ---- */
+button{font:inherit;cursor:pointer}
+.btn{
+  border:1px solid var(--hair);background:var(--surface);color:var(--ink);
+  border-radius:9px;padding:9px 13px;font-size:13.5px;font-weight:500;
+  transition:border-color .15s ease,background .15s ease,transform .06s ease;
+}
+.btn:hover{border-color:var(--ink-3)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{
+  background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600;
+}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.wide{width:100%;padding:14px;font-size:15px;border-radius:11px}
+.btn.ghost{background:transparent}
+:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+/* ---- sample banner ---- */
+.banner{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;
+  background:var(--warm-soft);border:1px solid color-mix(in srgb,var(--warm) 35%,transparent);
+  color:var(--ink);border-radius:11px;padding:11px 13px;font-size:13px;
+}
+.banner strong{font-weight:600}
+
+/* ---- grid ---- */
+.grid{display:grid;gap:18px;grid-template-columns:1fr;align-items:start}
+@media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
+
+/* ---- panel ---- */
+.panel{
+  background:var(--surface);border:1px solid var(--hair);border-radius:15px;
+  box-shadow:var(--shadow);padding:17px 16px 16px;
+  display:flex;flex-direction:column;gap:15px;
+}
+.panel-head{display:flex;align-items:flex-start;gap:10px;justify-content:space-between}
+.eyebrow{
+  margin:0;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-family:var(--mono);
+}
+.panel-head h2{
+  font-family:var(--display);font-weight:600;font-size:19px;letter-spacing:-.01em;margin:3px 0 0;
+}
+.chip{
+  font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.01em;
+  padding:5px 9px;border-radius:999px;white-space:nowrap;
+  background:var(--sunk);color:var(--ink-2);border:1px solid var(--hair-soft);
+}
+.chip.under{background:var(--cool-soft);color:var(--cool);border-color:color-mix(in srgb,var(--cool) 30%,transparent)}
+.chip.on{background:var(--neutral-soft);color:var(--neutral-pace);border-color:color-mix(in srgb,var(--neutral-pace) 30%,transparent)}
+.chip.over{background:var(--warm-soft);color:var(--warm);border-color:color-mix(in srgb,var(--warm) 33%,transparent)}
+.chip.hot{background:var(--hot-soft);color:var(--hot);border-color:color-mix(in srgb,var(--hot) 33%,transparent)}
+.chip.small{font-size:10.5px;padding:3px 7px}
+
+/* ---- readout ---- */
+.readout{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big{
+  font-family:var(--display);font-weight:600;font-size:clamp(46px,13vw,60px);line-height:.9;
+  letter-spacing:-.03em;font-variant-numeric:tabular-nums;
+}
+.big .unit{font-size:.42em;font-weight:500;color:var(--ink-3);margin-left:2px;letter-spacing:0}
+.big-label{margin:0;color:var(--ink-2);font-size:12.5px;max-width:15ch;line-height:1.35}
+
+/* ---- gauge ---- */
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar-row{display:grid;grid-template-columns:1fr;gap:5px}
+.bar-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.bar-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+.bar-val{font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.track{
+  position:relative;height:13px;border-radius:999px;background:var(--track);overflow:hidden;
+  background-image:linear-gradient(90deg,transparent calc(25% - 1px),var(--surface) calc(25% - 1px),var(--surface) 25%,transparent 25%);
+  background-size:25% 100%;
+}
+.fill{position:absolute;inset:0 auto 0 0;border-radius:999px;transition:width .35s ease}
+.fill.time{background:color-mix(in srgb,var(--ink-3) 62%,var(--track))}
+.fill.used.under{background:var(--cool)}
+.fill.used.on{background:var(--neutral-pace)}
+.fill.used.over{background:var(--warm)}
+.fill.used.hot{background:var(--hot)}
+.nowmark{
+  position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);border-radius:2px;
+  transform:translateX(-1px);transition:left .35s ease;
+}
+.axis{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--ink-3);margin-top:1px}
+.gauge-empty{
+  border:1px dashed var(--hair);border-radius:11px;padding:16px 14px;color:var(--ink-2);
+  font-size:13px;text-align:center;background:var(--sunk);
+}
+
+/* ---- facts ---- */
+.facts{
+  margin:0;display:grid;grid-template-columns:1fr 1fr;gap:11px 12px;
+  border-top:1px solid var(--hair-soft);border-bottom:1px solid var(--hair-soft);padding:13px 0;
+}
+.facts dt{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.facts dd{
+  margin:2px 0 0;font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums;
+  font-weight:500;letter-spacing:-.01em;
+}
+.facts dd.warn{color:var(--hot)}
+.facts dd small{font-family:var(--sans);font-size:11px;color:var(--ink-3);font-weight:400;display:block;letter-spacing:0}
+.note{
+  margin:0;font-size:12.5px;line-height:1.45;color:var(--ink-2);
+  border-left:2.5px solid var(--warm);padding-left:10px;
+}
+.note.bad{border-left-color:var(--hot)}
+
+/* ---- form ---- */
+.logform{display:flex;flex-direction:column;gap:16px;background:var(--sunk);border-radius:12px;padding:15px 14px 14px;margin-top:-3px}
+.form-title{margin:0;font-family:var(--display);font-size:14px;font-weight:600;letter-spacing:-.005em}
+.form-title span{display:block;font-family:var(--sans);font-weight:400;font-size:12px;color:var(--ink-2);margin-top:3px}
+.field{display:flex;flex-direction:column;gap:1px}
+.field-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.field-head label{font-size:12.5px;font-weight:500;color:var(--ink-2)}
+.field-head output{
+  font-family:var(--mono);font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;
+}
+.ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--ink-3);margin-top:-4px}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;background:transparent;width:100%;height:40px;margin:0;
+  --fp:0;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:14px;border-radius:999px;
+  background:linear-gradient(90deg,var(--accent) calc(var(--fp) * 1%),var(--track) calc(var(--fp) * 1%));
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:32px;height:32px;margin-top:-9px;border-radius:50%;
+  background:var(--surface);border:3px solid var(--accent);box-shadow:0 1px 5px rgba(0,0,0,.22);
+}
+input[type=range]::-moz-range-track{height:14px;border-radius:999px;background:var(--track)}
+input[type=range]::-moz-range-progress{height:14px;border-radius:999px;background:var(--accent)}
+input[type=range]::-moz-range-thumb{
+  width:28px;height:28px;border-radius:50%;background:var(--surface);border:3px solid var(--accent);
+  box-shadow:0 1px 5px rgba(0,0,0,.22);
+}
+.preview{
+  font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--hair-soft);border-radius:9px;padding:10px 11px;
+  font-variant-numeric:tabular-nums;
+}
+.preview b{color:var(--ink);font-weight:600}
+.form-actions{display:grid;grid-template-columns:auto 1fr;gap:9px}
+
+/* ---- history ---- */
+.history h3{
+  margin:0 0 9px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);
+  font-family:var(--mono);font-weight:600;
+}
+.spark{margin-bottom:6px}
+.spark svg{display:block;width:100%;height:auto}
+.spark text{fill:var(--ink-3);font-family:var(--mono);font-size:9px;font-variant-numeric:tabular-nums}
+.spark .band{fill:var(--neutral-pace);opacity:.1}
+.spark .base{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:3 3}
+.spark .line{fill:none;stroke:var(--ink-2);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;opacity:.75}
+.spark .dot{fill:var(--ink-2)}
+.spark .dot.under{fill:var(--cool)}
+.spark .dot.on{fill:var(--neutral-pace)}
+.spark .dot.over{fill:var(--warm)}
+.spark .dot.hot{fill:var(--hot)}
+.mini-empty{margin:0 0 8px;font-size:12.5px;color:var(--ink-3)}
+.rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.rows li{
+  display:grid;grid-template-columns:1fr auto auto;gap:2px 9px;align-items:center;
+  padding:9px 0;border-top:1px solid var(--hair-soft);font-family:var(--mono);font-size:12px;
+  font-variant-numeric:tabular-nums;
+}
+.rows li:first-child{border-top:0}
+.h-time{color:var(--ink-2);grid-column:1}
+.h-main{color:var(--ink);font-weight:500;grid-column:1/-1;font-size:11.5px}
+.h-main em{font-style:normal;color:var(--ink-3);font-weight:400}
+.del{
+  border:0;background:transparent;color:var(--ink-3);font-size:15px;line-height:1;padding:3px 5px;
+  border-radius:6px;font-family:var(--sans);
+}
+.del:hover{color:var(--hot);background:var(--hot-soft)}
+.more{align-self:flex-start;margin-top:9px;font-size:12px;color:var(--accent);background:none;border:0;padding:4px 0;font-weight:500}
+
+/* ---- dialog ---- */
+dialog{
+  border:1px solid var(--hair);background:var(--surface);color:var(--ink);border-radius:14px;
+  padding:0;max-width:400px;width:calc(100% - 28px);box-shadow:0 24px 60px -20px rgba(0,0,0,.45);
+}
+dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;padding:15px 16px 0}
+.dlg-head h2{margin:0;font-family:var(--display);font-size:17px;font-weight:600}
+.dlg-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px}
+.set{display:flex;flex-direction:column;gap:5px}
+.set label{font-size:12px;color:var(--ink-2);font-weight:500}
+.set input,.set select{
+  font:inherit;font-family:var(--mono);font-size:14px;padding:9px 10px;border-radius:8px;
+  border:1px solid var(--hair);background:var(--bg);color:var(--ink);width:100%;
+}
+.set .hint{font-size:11.5px;color:var(--ink-3);line-height:1.4}
+.set-row{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.danger{color:var(--hot);border-color:color-mix(in srgb,var(--hot) 40%,transparent)}
+
+/* ---- toast ---- */
+.toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:50;
+  background:var(--ink);color:var(--bg);font-size:13px;padding:11px 15px;border-radius:10px;
+  box-shadow:0 10px 30px -10px rgba(0,0,0,.5);max-width:min(420px,calc(100% - 28px));
+  text-align:center;line-height:1.4;
+}
+.foot{color:var(--ink-3);font-size:11.5px;text-align:center;line-height:1.6}
+.foot code{font-family:var(--mono);font-size:11px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <h1>Limit Pace</h1>
+      <p class="sub">Claude Pro usage, logged by hand and paced against the clock.</p>
+    </div>
+    <div class="tools">
+      <button class="btn" id="btn-export">Export</button>
+      <button class="btn" id="btn-import">Import</button>
+      <button class="btn" id="btn-settings">Settings</button>
+      <input type="file" id="file-input" accept="application/json,.json" hidden>
+    </div>
+  </header>
+
+  <div class="banner" id="sample-banner" hidden>
+    <span><strong>Sample data.</strong> These readings are made up so you can see the layout working.</span>
+    <button class="btn" id="btn-clear-sample">Clear sample data</button>
+  </div>
+
+  <main class="grid" id="grid"></main>
+
+  <p class="foot">Everything stays in this browser's <code>localStorage</code>. Export regularly if it matters.</p>
+</div>
+
+<dialog id="settings-dlg">
+  <div class="dlg-head">
+    <h2>Settings</h2>
+    <button class="btn ghost" id="btn-close-settings">Close</button>
+  </div>
+  <div class="dlg-body">
+    <div class="set">
+      <label for="s-dur">Session window (hours)</label>
+      <input type="number" id="s-dur" min="0.5" max="48" step="0.5">
+      <p class="hint">Anthropic's rolling session window. Default 5 hours.</p>
+    </div>
+    <div class="set">
+      <label for="w-dur">Weekly window (hours)</label>
+      <input type="number" id="w-dur" min="1" max="744" step="1">
+      <p class="hint">Default 168 hours (7 days).</p>
+    </div>
+    <div class="set">
+      <label>Weekly reset slot</label>
+      <div class="set-row">
+        <select id="w-day">
+          <option value="0">Sunday</option><option value="1">Monday</option>
+          <option value="2">Tuesday</option><option value="3">Wednesday</option>
+          <option value="4">Thursday</option><option value="5">Friday</option>
+          <option value="6">Saturday</option>
+        </select>
+        <input type="time" id="w-time">
+      </div>
+      <p class="hint">Your computed weekly reset is checked against this slot, and any drift is shown on the card.</p>
+    </div>
+    <button class="btn danger" id="btn-wipe">Delete all data</button>
+  </div>
+</dialog>
+
+<script>
+(function(){
+"use strict";
+
+var STORE_KEY = "claude-limits.v1";
+var KEYS = ["session","weekly"];
+var DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+var DAY_ABBR  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+var META = {
+  session:{ title:"Current session", eyebrow:"Rolling window", noun:"session" },
+  weekly: { title:"Weekly",          eyebrow:"Rolling window", noun:"week" }
+};
+
+/* ---------------- state ---------------- */
+
+function blankTracker(hours){
+  return { duration_hours:hours, last_logged_at:null, time_until_reset_minutes:null, percent_used:null, history:[] };
+}
+function defaultState(){
+  return {
+    version:1,
+    sample:false,
+    settings:{ weekly_reset_day:2, weekly_reset_time:"10:00" },
+    trackers:{ session:blankTracker(5), weekly:blankTracker(168) }
+  };
+}
+
+var state = load();
+
+function load(){
+  var raw = null;
+  try { raw = localStorage.getItem(STORE_KEY); } catch(e){ raw = null; }
+  if(!raw) return defaultState();
+  try {
+    var parsed = JSON.parse(raw);
+    return normalizeState(parsed);
+  } catch(e){ return defaultState(); }
+}
+function normalizeState(obj){
+  var base = defaultState();
+  if(!obj || typeof obj !== "object") return base;
+  if(obj.settings){
+    if(typeof obj.settings.weekly_reset_day === "number") base.settings.weekly_reset_day = obj.settings.weekly_reset_day;
+    if(typeof obj.settings.weekly_reset_time === "string") base.settings.weekly_reset_time = obj.settings.weekly_reset_time;
+  }
+  base.sample = !!obj.sample;
+  KEYS.forEach(function(k){
+    var src = obj.trackers && obj.trackers[k];
+    if(!src) return;
+    var dst = base.trackers[k];
+    if(isNum(src.duration_hours) && src.duration_hours > 0) dst.duration_hours = src.duration_hours;
+    if(src.last_logged_at && isFinite(new Date(src.last_logged_at).getTime())) dst.last_logged_at = new Date(src.last_logged_at).toISOString();
+    if(isNum(src.time_until_reset_minutes)) dst.time_until_reset_minutes = src.time_until_reset_minutes;
+    if(isNum(src.percent_used)) dst.percent_used = src.percent_used;
+    dst.history = normalizeHistory(src.history);
+  });
+  return base;
+}
+function normalizeHistory(list){
+  if(!Array.isArray(list)) return [];
+  var out = [];
+  list.forEach(function(e){
+    var n = normalizeEntry(e);
+    if(n) out.push(n);
+  });
+  return sortHistory(out);
+}
+function normalizeEntry(e){
+  if(!e || typeof e !== "object") return null;
+  var ts = new Date(e.timestamp);
+  if(!isFinite(ts.getTime())) return null;
+  if(!isNum(e.time_until_reset_minutes) || !isNum(e.percent_used)) return null;
+  var mins = Math.round(e.time_until_reset_minutes);
+  var reset = e.computed_reset_time && isFinite(new Date(e.computed_reset_time).getTime())
+    ? new Date(e.computed_reset_time)
+    : new Date(ts.getTime() + mins*60000);
+  return {
+    timestamp: ts.toISOString(),
+    time_until_reset_minutes: mins,
+    percent_used: clamp(Math.round(e.percent_used), 0, 100),
+    computed_reset_time: reset.toISOString()
+  };
+}
+function sortHistory(list){
+  return list.slice().sort(function(a,b){ return new Date(a.timestamp) - new Date(b.timestamp); });
+}
+function isNum(v){ return typeof v === "number" && isFinite(v); }
+function clamp(v,lo,hi){ return Math.min(hi, Math.max(lo, v)); }
+
+function save(){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+  catch(e){ toast("Couldn't save to this browser's storage. Export your data to keep it."); }
+}
+
+/* ---------------- core calculation ---------------- */
+
+/* reset_time = last_logged_at + time_until_reset. The capture timestamp is the
+   anchor, so a reading typed in late still resolves to the right clock time. */
+function resetTimeFrom(capturedAt, minutes){
+  return new Date(new Date(capturedAt).getTime() + minutes*60000);
+}
+function stats(t){
+  if(!t.last_logged_at || !isNum(t.time_until_reset_minutes) || !isNum(t.percent_used)) return null;
+  var durMin = t.duration_hours * 60;
+  var left = t.time_until_reset_minutes;
+  var loggedAt = new Date(t.last_logged_at);
+  var reset = resetTimeFrom(loggedAt, left);
+  var elapsedMin = durMin - left;                       // elapsed_time, in minutes
+  var elapsedPct = durMin > 0 ? (elapsedMin / durMin) * 100 : 0;
+  var pace = elapsedPct > 0 ? (t.percent_used / elapsedPct) : null;
+  var now = Date.now();
+  var leftNow = Math.round((reset.getTime() - now) / 60000);
+  var elapsedNowPct = durMin > 0 ? clamp(((durMin - leftNow) / durMin) * 100, 0, 100) : 0;
+  return {
+    loggedAt: loggedAt, reset: reset, durMin: durMin,
+    leftAtLog: left, elapsedMin: elapsedMin, elapsedPct: elapsedPct,
+    percentUsed: t.percent_used, pace: pace,
+    leftNow: leftNow, elapsedNowPct: elapsedNowPct,
+    expired: leftNow <= 0,
+    overWindow: left > durMin
+  };
+}
+function paceOfEntry(entry, durationHours){
+  var durMin = durationHours * 60;
+  var elapsedPct = durMin > 0 ? ((durMin - entry.time_until_reset_minutes) / durMin) * 100 : 0;
+  if(elapsedPct <= 0) return null;
+  return entry.percent_used / elapsedPct;
+}
+function paceClass(p){
+  if(p === null || !isFinite(p)) return "";
+  if(p < 0.85) return "under";
+  if(p <= 1.15) return "on";
+  if(p <= 1.5) return "over";
+  return "hot";
+}
+function paceLabel(p){
+  if(p === null || !isFinite(p)) return "Pace n/a";
+  var r = p.toFixed(2).replace(/0$/,"") + "×";
+  if(p < 0.85) return r + " under pace";
+  if(p <= 1.15) return "On pace · " + r;
+  return r + " over pace";
+}
+
+/* ---------------- formatting ---------------- */
+
+function fmtDuration(mins){
+  var neg = mins < 0;
+  var m = Math.abs(Math.round(mins));
+  var d = Math.floor(m/1440), h = Math.floor((m%1440)/60), mm = m%60;
+  var parts = [];
+  if(d) parts.push(d + "d");
+  if(h || d) parts.push(h + "h");
+  parts.push(mm + "m");
+  return (neg ? "-" : "") + parts.join(" ");
+}
+function fmtClock(date){
+  return date.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+}
+function fmtWhen(date){
+  var now = new Date();
+  var sameDay = date.toDateString() === now.toDateString();
+  if(sameDay) return fmtClock(date);
+  var tomorrow = new Date(now.getTime() + 86400000);
+  var yesterday = new Date(now.getTime() - 86400000);
+  if(date.toDateString() === tomorrow.toDateString()) return "Tomorrow " + fmtClock(date);
+  if(date.toDateString() === yesterday.toDateString()) return "Yesterday " + fmtClock(date);
+  return DAY_ABBR[date.getDay()] + " " + date.toLocaleDateString([], {month:"short", day:"numeric"}) + ", " + fmtClock(date);
+}
+function fmtAgo(date){
+  var mins = Math.round((Date.now() - date.getTime())/60000);
+  if(mins < 1) return "just now";
+  if(mins < 60) return mins + "m ago";
+  if(mins < 1440) return Math.floor(mins/60) + "h " + (mins%60) + "m ago";
+  return Math.floor(mins/1440) + "d ago";
+}
+function esc(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+
+/* nearest occurrence of the configured weekly slot to a target instant */
+function scheduledSlot(target){
+  var parts = (state.settings.weekly_reset_time || "10:00").split(":");
+  var hh = clamp(parseInt(parts[0],10) || 0, 0, 23);
+  var mm = clamp(parseInt(parts[1],10) || 0, 0, 59);
+  var day = clamp(state.settings.weekly_reset_day, 0, 6);
+  var next = new Date(target);
+  next.setHours(hh, mm, 0, 0);
+  next.setDate(next.getDate() + ((day - next.getDay() + 7) % 7));
+  if(next.getTime() < target.getTime()) next.setDate(next.getDate() + 7);
+  var prev = new Date(next.getTime() - 7*86400000);
+  return (target - prev) < (next - target) ? prev : next;
+}
+function nextSlotFromNow(){
+  var now = new Date();
+  var parts = (state.settings.weekly_reset_time || "10:00").split(":");
+  var d = new Date(now);
+  d.setHours(clamp(parseInt(parts[0],10)||0,0,23), clamp(parseInt(parts[1],10)||0,0,59), 0, 0);
+  d.setDate(d.getDate() + ((clamp(state.settings.weekly_reset_day,0,6) - d.getDay() + 7) % 7));
+  if(d.getTime() <= now.getTime()) d.setDate(d.getDate() + 7);
+  return d;
+}
+
+/* ---------------- slider config ---------------- */
+
+function sliderCfg(t){
+  var dur = t.duration_hours;
+  if(dur <= 24) return { days:0, hours:Math.min(23, Math.ceil(dur)), minutes:59 };
+  return { days:Math.floor(dur/24), hours:23, minutes:59 };
+}
+
+/* ---------------- panel markup ---------------- */
+
+function panelHTML(key){
+  var t = state.trackers[key], cfg = sliderCfg(t), m = META[key];
+  var f = function(name, label, max, unit){
+    return '' +
+      '<div class="field">' +
+        '<div class="field-head">' +
+          '<label for="' + key + '-' + name + '">' + label + '</label>' +
+          '<output id="' + key + '-' + name + '-out" for="' + key + '-' + name + '">0' + unit + '</output>' +
+        '</div>' +
+        '<input type="range" id="' + key + '-' + name + '" data-slider="' + name + '" min="0" max="' + max + '" step="1" value="0">' +
+        '<div class="ticks"><span>0</span><span>' + max + unit + '</span></div>' +
+      '</div>';
+  };
+  return '' +
+  '<section class="panel" data-key="' + key + '">' +
+    '<div class="panel-head">' +
+      '<div>' +
+        '<p class="eyebrow">' + m.eyebrow + ' · <span data-slot="dur"></span></p>' +
+        '<h2>' + m.title + '</h2>' +
+      '</div>' +
+      '<span class="chip" data-slot="chip">No data yet</span>' +
+    '</div>' +
+
+    '<div class="readout">' +
+      '<div class="big"><span data-slot="pct">—</span><span class="unit">%</span></div>' +
+      '<p class="big-label" data-slot="pctlabel">of the limit used, at your last reading</p>' +
+    '</div>' +
+
+    '<div data-slot="gauge"></div>' +
+
+    '<dl class="facts" data-slot="facts"></dl>' +
+    '<p class="note" data-slot="note" hidden></p>' +
+
+    '<button class="btn primary wide" data-act="open-form">Log new entry</button>' +
+
+    '<form class="logform" data-slot="form" hidden>' +
+      '<p class="form-title">New reading' +
+        '<span>Read the numbers off Claude, then set the sliders. The time you tap Save is what anchors the maths.</span>' +
+      '</p>' +
+      (cfg.days ? f("days","Days left", cfg.days, "d") : "") +
+      f("hours","Hours left", cfg.hours, "h") +
+      f("minutes","Minutes left", cfg.minutes, "m") +
+      f("percent","Percent used", 100, "%") +
+      '<div class="preview" data-slot="preview"></div>' +
+      '<div class="form-actions">' +
+        '<button type="button" class="btn" data-act="cancel">Cancel</button>' +
+        '<button type="submit" class="btn primary">Save reading</button>' +
+      '</div>' +
+    '</form>' +
+
+    '<div class="history">' +
+      '<h3>History</h3>' +
+      '<div class="spark" data-slot="spark"></div>' +
+      '<ol class="rows" data-slot="rows"></ol>' +
+      '<button class="more" data-act="more" hidden></button>' +
+    '</div>' +
+  '</section>';
+}
+
+/* ---------------- rendering ---------------- */
+
+var expanded = { session:false, weekly:false };
+var ROW_LIMIT = 5;
+
+function render(){
+  KEYS.forEach(renderPanel);
+  document.getElementById("sample-banner").hidden = !state.sample;
+}
+
+function renderPanel(key){
+  var panel = document.querySelector('.panel[data-key="' + key + '"]');
+  if(!panel) return;
+  var t = state.trackers[key];
+  var s = stats(t);
+  var q = function(sel){ return panel.querySelector('[data-slot="' + sel + '"]'); };
+
+  q("dur").textContent = t.duration_hours >= 24
+    ? (t.duration_hours/24 % 1 === 0 ? (t.duration_hours/24) + " days" : t.duration_hours + "h")
+    : t.duration_hours + "h";
+
+  var chip = q("chip");
+  var note = q("note");
+  note.hidden = true; note.className = "note";
+
+  if(!s){
+    chip.className = "chip"; chip.textContent = "No data yet";
+    q("pct").textContent = "—";
+    q("pctlabel").textContent = "Nothing logged yet — log a reading to start tracking pace.";
+    q("gauge").innerHTML = '<div class="gauge-empty">Log a reading and this becomes a side-by-side of limit burned against window elapsed.</div>';
+    q("facts").innerHTML = factsHTML([
+      ["Window", (t.duration_hours >= 24 ? (t.duration_hours/24) + " days" : t.duration_hours + " hours"), ""],
+      key === "weekly" ? ["Next scheduled reset", fmtWhen(nextSlotFromNow()), DAY_NAMES[clamp(state.settings.weekly_reset_day,0,6)] + " " + state.settings.weekly_reset_time] : ["Status", "Empty", "no readings"]
+    ]);
+    renderHistory(key, panel, t);
+    return;
+  }
+
+  var pc = paceClass(s.pace);
+  chip.className = "chip " + pc;
+  chip.textContent = paceLabel(s.pace);
+
+  q("pct").textContent = Math.round(s.percentUsed);
+  q("pctlabel").textContent = "of the limit used, at your last reading";
+
+  var usedW = clamp(s.percentUsed, 0, 100);
+  var elapsedW = clamp(s.elapsedPct, 0, 100);
+  q("gauge").innerHTML = '' +
+    '<div class="bars">' +
+      '<div class="bar-row">' +
+        '<div class="bar-top"><span class="bar-label">Limit used</span><span class="bar-val">' + Math.round(s.percentUsed) + '%</span></div>' +
+        '<div class="track"><div class="fill used ' + pc + '" style="width:' + usedW + '%"></div></div>' +
+      '</div>' +
+      '<div class="bar-row">' +
+        '<div class="bar-top"><span class="bar-label">Window elapsed</span><span class="bar-val">' + Math.round(s.elapsedPct) + '%</span></div>' +
+        '<div class="track">' +
+          '<div class="fill time" style="width:' + elapsedW + '%"></div>' +
+          '<div class="nowmark" style="left:' + clamp(s.elapsedNowPct,0,100) + '%" title="Where the window stands right now"></div>' +
+        '</div>' +
+        '<div class="axis"><span>0%</span><span>50%</span><span>100%</span></div>' +
+      '</div>' +
+    '</div>';
+
+  var facts = [
+    ["Resets at", fmtWhen(s.reset), s.expired ? "already passed" : "in " + fmtDuration(s.leftNow)],
+    ["Left now", s.expired ? "—" : fmtDuration(s.leftNow), s.expired ? "window has turned over" : "was " + fmtDuration(s.leftAtLog) + " at log"],
+    ["Window elapsed", Math.round(s.elapsedPct) + "%", fmtDuration(Math.max(0,s.elapsedMin)) + " of " + fmtDuration(s.durMin)],
+    ["Last logged", fmtAgo(s.loggedAt), fmtWhen(s.loggedAt)]
+  ];
+  if(key === "weekly"){
+    var slot = scheduledSlot(s.reset);
+    var drift = Math.round((s.reset - slot)/60000);
+    facts.push(["Scheduled slot", fmtWhen(slot),
+      Math.abs(drift) <= 5 ? "computed reset matches" :
+      (drift > 0 ? "computed reset is " + fmtDuration(drift) + " later" : "computed reset is " + fmtDuration(-drift) + " earlier")]);
+  }
+  q("facts").innerHTML = factsHTML(facts, s.expired);
+
+  if(s.overWindow){
+    note.hidden = false; note.className = "note";
+    note.textContent = "Time left (" + fmtDuration(s.leftAtLog) + ") is longer than the " + fmtDuration(s.durMin) + " window, so there is no elapsed time to pace against. Check the window length in Settings.";
+  } else if(s.expired){
+    note.hidden = false; note.className = "note bad";
+    note.textContent = "This reading is stale — the reset at " + fmtWhen(s.reset) + " has already passed. Log a fresh one.";
+  } else if(pc === "hot"){
+    note.hidden = false; note.className = "note bad";
+    note.textContent = "At this rate you hit 100% around " + fmtWhen(projectedExhaustion(s)) + ", before the window resets.";
+  } else if(pc === "over"){
+    note.hidden = false; note.className = "note";
+    note.textContent = "Running ahead of the clock. Full burn lands around " + fmtWhen(projectedExhaustion(s)) + ".";
+  }
+
+  renderHistory(key, panel, t);
+}
+
+function projectedExhaustion(s){
+  /* percent per elapsed minute, extended forward from the log timestamp */
+  var rate = s.elapsedMin > 0 ? s.percentUsed / s.elapsedMin : 0;
+  if(rate <= 0) return s.reset;
+  var minsToFull = (100 - s.percentUsed) / rate;
+  return new Date(s.loggedAt.getTime() + minsToFull*60000);
+}
+
+function factsHTML(rows, warn){
+  return rows.map(function(r){
+    return '<div><dt>' + esc(r[0]) + '</dt><dd' + (warn && r[0] === "Left now" ? ' class="warn"' : '') + '>' +
+      esc(r[1]) + (r[2] ? '<small>' + esc(r[2]) + '</small>' : '') + '</dd></div>';
+  }).join("");
+}
+
+function renderHistory(key, panel, t){
+  var spark = panel.querySelector('[data-slot="spark"]');
+  var rows = panel.querySelector('[data-slot="rows"]');
+  var more = panel.querySelector('[data-act="more"]');
+  var hist = t.history;
+
+  spark.innerHTML = sparkHTML(hist, t.duration_hours);
+
+  if(!hist.length){
+    rows.innerHTML = "";
+    more.hidden = true;
+    return;
+  }
+  var newest = hist.slice().reverse();
+  var shown = expanded[key] ? newest : newest.slice(0, ROW_LIMIT);
+  rows.innerHTML = shown.map(function(e){
+    var p = paceOfEntry(e, t.duration_hours);
+    var cls = paceClass(p);
+    var pl = (p === null || !isFinite(p)) ? "n/a" : p.toFixed(2) + "×";
+    return '<li>' +
+      '<span class="h-time">' + esc(fmtWhen(new Date(e.timestamp))) + '</span>' +
+      '<span class="h-main">' + e.percent_used + '% <em>used · ' + esc(fmtDuration(e.time_until_reset_minutes)) + ' left · reset ' + esc(fmtClock(new Date(e.computed_reset_time))) + '</em></span>' +
+      '<span class="chip small ' + cls + '">' + pl + '</span>' +
+      '<button class="del" data-act="del" data-ts="' + esc(e.timestamp) + '" title="Delete this reading" aria-label="Delete reading from ' + esc(fmtWhen(new Date(e.timestamp))) + '">×</button>' +
+      '</li>';
+  }).join("");
+
+  if(newest.length > ROW_LIMIT){
+    more.hidden = false;
+    more.textContent = expanded[key] ? "Show fewer" : "Show all " + newest.length + " readings";
+  } else {
+    more.hidden = true;
+  }
+}
+
+function sparkHTML(hist, durationHours){
+  if(!hist.length) return '<p class="mini-empty">Readings will chart here, against a 1.00× on-pace line.</p>';
+  var pts = [];
+  hist.forEach(function(e){
+    var p = paceOfEntry(e, durationHours);
+    if(p !== null && isFinite(p)) pts.push({ t:new Date(e.timestamp).getTime(), p:p, e:e });
+  });
+  if(!pts.length) return '<p class="mini-empty">No entry yet has any elapsed window to pace against.</p>';
+
+  var W=340,H=96,L=32,R=8,T=12,B=18;
+  var iw=W-L-R, ih=H-T-B;
+  var minRaw = pts[0].p, maxRaw = pts[0].p;
+  pts.forEach(function(d){ if(d.p < minRaw) minRaw = d.p; if(d.p > maxRaw) maxRaw = d.p; });
+  var lo = Math.max(0, Math.min(0.7, minRaw - 0.15));
+  var hi = Math.min(6, Math.max(1.3, maxRaw + 0.15));
+  var t0 = pts[0].t, t1 = pts[pts.length-1].t;
+  var X = function(d){ return t1 > t0 ? L + (d.t - t0)/(t1 - t0)*iw : L + iw/2; };
+  var Y = function(p){ return T + ih - ((clamp(p,lo,hi) - lo)/(hi - lo))*ih; };
+
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Pace ratio of each logged reading against the on-pace line">';
+  svg += '<rect class="band" x="' + L + '" y="' + Y(1.15).toFixed(1) + '" width="' + iw + '" height="' + (Y(0.85)-Y(1.15)).toFixed(1) + '"></rect>';
+  svg += '<line class="base" x1="' + L + '" y1="' + Y(1).toFixed(1) + '" x2="' + (L+iw) + '" y2="' + Y(1).toFixed(1) + '"></line>';
+  svg += '<text x="' + (L-5) + '" y="' + (Y(1)+3.2).toFixed(1) + '" text-anchor="end">1.0×</text>';
+  svg += '<text x="' + (L-5) + '" y="' + (T+7) + '" text-anchor="end">' + hi.toFixed(2) + '×</text>';
+  svg += '<text x="' + (L-5) + '" y="' + (T+ih+3) + '" text-anchor="end">' + lo.toFixed(2) + '×</text>';
+  if(pts.length > 1){
+    var d = pts.map(function(pt,i){ return (i?"L":"M") + X(pt).toFixed(1) + " " + Y(pt.p).toFixed(1); }).join(" ");
+    svg += '<path class="line" d="' + d + '"></path>';
+  }
+  pts.forEach(function(pt,i){
+    var last = i === pts.length-1;
+    var cls = paceClass(pt.p);
+    svg += '<circle class="dot ' + cls + '" cx="' + X(pt).toFixed(1) + '" cy="' + Y(pt.p).toFixed(1) + '" r="' + (last?4.2:2.6) + '">' +
+           '<title>' + esc(fmtWhen(new Date(pt.e.timestamp))) + " — " + pt.e.percent_used + "% used, " + pt.p.toFixed(2) + "× pace" + '</title></circle>';
+  });
+  svg += '</svg>';
+  return svg;
+}
+
+/* ---------------- form ---------------- */
+
+function formValues(panel){
+  var v = {};
+  panel.querySelectorAll("input[data-slider]").forEach(function(inp){
+    v[inp.getAttribute("data-slider")] = parseInt(inp.value,10) || 0;
+  });
+  return v;
+}
+function totalMinutes(v){ return (v.days||0)*1440 + (v.hours||0)*60 + (v.minutes||0); }
+
+function syncForm(panel){
+  var key = panel.getAttribute("data-key");
+  var t = state.trackers[key];
+  var v = formValues(panel);
+  panel.querySelectorAll("input[data-slider]").forEach(function(inp){
+    var name = inp.getAttribute("data-slider");
+    var unit = name === "days" ? "d" : name === "hours" ? "h" : name === "minutes" ? "m" : "%";
+    var out = panel.querySelector("#" + key + "-" + name + "-out");
+    if(out) out.textContent = inp.value + unit;
+    inp.style.setProperty("--fp", String((parseInt(inp.value,10) / (parseInt(inp.max,10) || 1)) * 100));
+  });
+
+  var mins = totalMinutes(v);
+  var now = new Date();
+  var reset = resetTimeFrom(now, mins);
+  var durMin = t.duration_hours * 60;
+  var elapsedPct = durMin > 0 ? ((durMin - mins)/durMin)*100 : 0;
+  var pace = elapsedPct > 0 ? (v.percent / elapsedPct) : null;
+  var preview = panel.querySelector('[data-slot="preview"]');
+  var line1 = "Save now → resets <b>" + esc(fmtWhen(reset)) + "</b> <span>(" + esc(fmtDuration(mins)) + " from the moment you tap Save)</span>";
+  var line2;
+  if(mins > durMin){
+    line2 = "Longer than the " + esc(fmtDuration(durMin)) + " window — no pace to compute.";
+  } else {
+    line2 = "Window elapsed <b>" + Math.round(elapsedPct) + "%</b> · pace <b>" + (pace === null || !isFinite(pace) ? "n/a" : pace.toFixed(2) + "×") + "</b>";
+  }
+  preview.innerHTML = line1 + "<br>" + line2;
+}
+
+function openForm(panel){
+  var key = panel.getAttribute("data-key");
+  var t = state.trackers[key];
+  var form = panel.querySelector('[data-slot="form"]');
+  var btn = panel.querySelector('[data-act="open-form"]');
+
+  /* seed the sliders from the last reading so a repeat log is a small nudge */
+  var seedMins = isNum(t.time_until_reset_minutes) ? t.time_until_reset_minutes : Math.round(t.duration_hours*60*0.5);
+  var seedPct = isNum(t.percent_used) ? t.percent_used : 0;
+  var setSlider = function(name, val){
+    var inp = panel.querySelector("#" + key + "-" + name);
+    if(inp) inp.value = clamp(val, 0, parseInt(inp.max,10));
+  };
+  setSlider("days", Math.floor(seedMins/1440));
+  setSlider("hours", panel.querySelector("#" + key + "-days") ? Math.floor((seedMins%1440)/60) : Math.floor(seedMins/60));
+  setSlider("minutes", seedMins % 60);
+  setSlider("percent", seedPct);
+
+  form.hidden = false;
+  btn.hidden = true;
+  syncForm(panel);
+  form.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+function closeForm(panel){
+  panel.querySelector('[data-slot="form"]').hidden = true;
+  panel.querySelector('[data-act="open-form"]').hidden = false;
+}
+
+function submitEntry(panel){
+  var key = panel.getAttribute("data-key");
+  var t = state.trackers[key];
+  var v = formValues(panel);
+  var mins = totalMinutes(v);
+  var now = new Date();                       /* the auto-stamp: capture time */
+  var entry = {
+    timestamp: now.toISOString(),
+    time_until_reset_minutes: mins,
+    percent_used: clamp(v.percent, 0, 100),
+    computed_reset_time: resetTimeFrom(now, mins).toISOString()
+  };
+  t.last_logged_at = entry.timestamp;
+  t.time_until_reset_minutes = entry.time_until_reset_minutes;
+  t.percent_used = entry.percent_used;
+  t.history.push(entry);
+  t.history = sortHistory(t.history);
+  if(state.sample) state.sample = false;
+  save();
+  closeForm(panel);
+  render();
+  toast("Logged at " + fmtClock(now) + " · " + META[key].title.toLowerCase() + " resets " + fmtWhen(new Date(entry.computed_reset_time)) + ".");
+}
+
+/* ---------------- export / import ---------------- */
+
+function exportData(){
+  var payload = JSON.parse(JSON.stringify(state));
+  payload.exported_at = new Date().toISOString();
+  var blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  var d = new Date();
+  var stamp = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  a.href = url;
+  a.download = "claude-limits-" + stamp + ".json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  toast("Exported claude-limits-" + stamp + ".json");
+}
+
+function importData(raw){
+  var incoming;
+  try { incoming = JSON.parse(raw); }
+  catch(e){ toast("That file isn't valid JSON — nothing was changed."); return; }
+  if(!incoming || !incoming.trackers){ toast("No tracker data in that file — nothing was changed."); return; }
+
+  var added = 0, dupes = 0, currentsUpdated = [];
+
+  KEYS.forEach(function(key){
+    var cur = state.trackers[key];
+    var inc = incoming.trackers[key];
+    if(!inc) return;
+
+    /* dedupe history by timestamp, existing copy wins, then re-sort */
+    var byTs = new Map();
+    cur.history.forEach(function(e){ byTs.set(e.timestamp, e); });
+    normalizeHistory(inc.history).forEach(function(e){
+      if(byTs.has(e.timestamp)) dupes++;
+      else { byTs.set(e.timestamp, e); added++; }
+    });
+    cur.history = sortHistory(Array.from(byTs.values()));
+
+    /* current values: imported wins only if its reading is more recent */
+    var incAt = inc.last_logged_at && isFinite(new Date(inc.last_logged_at).getTime()) ? new Date(inc.last_logged_at).getTime() : -Infinity;
+    var curAt = cur.last_logged_at ? new Date(cur.last_logged_at).getTime() : -Infinity;
+    if(incAt > curAt && isNum(inc.time_until_reset_minutes) && isNum(inc.percent_used)){
+      cur.last_logged_at = new Date(inc.last_logged_at).toISOString();
+      cur.time_until_reset_minutes = Math.round(inc.time_until_reset_minutes);
+      cur.percent_used = clamp(Math.round(inc.percent_used), 0, 100);
+      currentsUpdated.push(META[key].title.toLowerCase());
+    }
+  });
+
+  if(added > 0) state.sample = false;
+  save();
+  render();
+  var msg = "Merged: " + added + " new " + (added === 1 ? "reading" : "readings") +
+            (dupes ? ", " + dupes + " duplicate" + (dupes === 1 ? "" : "s") + " skipped" : "") + ".";
+  if(currentsUpdated.length) msg += " Current values updated for " + currentsUpdated.join(" and ") + ".";
+  else if(added || dupes) msg += " Existing current values kept (they're newer).";
+  toast(msg);
+}
+
+/* ---------------- sample data ---------------- */
+
+function loadSample(){
+  var now = Date.now();
+  var mk = function(minsAgo, left, pct){
+    var ts = new Date(now - minsAgo*60000);
+    return { timestamp: ts.toISOString(), time_until_reset_minutes: left, percent_used: pct,
+             computed_reset_time: new Date(ts.getTime() + left*60000).toISOString() };
+  };
+  state = defaultState();
+  state.sample = true;
+  state.trackers.session.history = [ mk(214, 268, 9), mk(151, 205, 26), mk(78, 132, 55), mk(26, 84, 71) ];
+  state.trackers.weekly.history = [ mk(4310, 8330, 12), mk(2870, 6890, 27), mk(1390, 5410, 44), mk(26, 4774, 58) ];
+  KEYS.forEach(function(k){
+    var t = state.trackers[k];
+    var last = t.history[t.history.length-1];
+    t.last_logged_at = last.timestamp;
+    t.time_until_reset_minutes = last.time_until_reset_minutes;
+    t.percent_used = last.percent_used;
+  });
+  save();
+  render();
+}
+
+/* ---------------- toast ---------------- */
+
+var toastTimer = null, toastEl = null;
+function toast(msg){
+  if(toastEl) toastEl.remove();
+  toastEl = document.createElement("div");
+  toastEl.className = "toast";
+  toastEl.setAttribute("role","status");
+  toastEl.textContent = msg;
+  document.body.appendChild(toastEl);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ if(toastEl){ toastEl.remove(); toastEl = null; } }, 5200);
+}
+
+/* ---------------- wiring ---------------- */
+
+var grid = document.getElementById("grid");
+grid.innerHTML = KEYS.map(panelHTML).join("");
+
+grid.addEventListener("input", function(ev){
+  var inp = ev.target;
+  if(inp.matches("input[data-slider]")) syncForm(inp.closest(".panel"));
+});
+grid.addEventListener("click", function(ev){
+  var btn = ev.target.closest("[data-act]");
+  if(!btn) return;
+  var panel = btn.closest(".panel");
+  var act = btn.getAttribute("data-act");
+  if(act === "open-form") openForm(panel);
+  else if(act === "cancel") closeForm(panel);
+  else if(act === "more"){
+    var k = panel.getAttribute("data-key");
+    expanded[k] = !expanded[k];
+    renderPanel(k);
+  } else if(act === "del"){
+    var ts = btn.getAttribute("data-ts");
+    var key = panel.getAttribute("data-key");
+    var t = state.trackers[key];
+    t.history = t.history.filter(function(e){ return e.timestamp !== ts; });
+    if(t.last_logged_at === ts){
+      var last = t.history[t.history.length-1];
+      if(last){ t.last_logged_at = last.timestamp; t.time_until_reset_minutes = last.time_until_reset_minutes; t.percent_used = last.percent_used; }
+      else { t.last_logged_at = null; t.time_until_reset_minutes = null; t.percent_used = null; }
+    }
+    save(); render(); toast("Reading deleted.");
+  }
+});
+grid.addEventListener("submit", function(ev){
+  ev.preventDefault();
+  submitEntry(ev.target.closest(".panel"));
+});
+
+document.getElementById("btn-export").addEventListener("click", exportData);
+var fileInput = document.getElementById("file-input");
+document.getElementById("btn-import").addEventListener("click", function(){ fileInput.click(); });
+fileInput.addEventListener("change", function(){
+  var file = fileInput.files && fileInput.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(){ importData(String(reader.result)); fileInput.value = ""; };
+  reader.onerror = function(){ toast("Couldn't read that file."); fileInput.value = ""; };
+  reader.readAsText(file);
+});
+
+var dlg = document.getElementById("settings-dlg");
+document.getElementById("btn-settings").addEventListener("click", function(){
+  document.getElementById("s-dur").value = state.trackers.session.duration_hours;
+  document.getElementById("w-dur").value = state.trackers.weekly.duration_hours;
+  document.getElementById("w-day").value = String(clamp(state.settings.weekly_reset_day,0,6));
+  document.getElementById("w-time").value = state.settings.weekly_reset_time;
+  if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","");
+});
+document.getElementById("btn-close-settings").addEventListener("click", function(){ dlg.close ? dlg.close() : dlg.removeAttribute("open"); });
+dlg.addEventListener("change", function(){
+  var sd = parseFloat(document.getElementById("s-dur").value);
+  var wd = parseFloat(document.getElementById("w-dur").value);
+  if(isNum(sd) && sd > 0) state.trackers.session.duration_hours = sd;
+  if(isNum(wd) && wd > 0) state.trackers.weekly.duration_hours = wd;
+  state.settings.weekly_reset_day = clamp(parseInt(document.getElementById("w-day").value,10) || 0, 0, 6);
+  state.settings.weekly_reset_time = document.getElementById("w-time").value || "10:00";
+  save();
+  /* slider ranges depend on window length, so rebuild the panels */
+  grid.innerHTML = KEYS.map(panelHTML).join("");
+  render();
+});
+document.getElementById("btn-wipe").addEventListener("click", function(){
+  if(!confirm("Delete every logged reading and reset the settings? This can't be undone.")) return;
+  state = defaultState();
+  save();
+  grid.innerHTML = KEYS.map(panelHTML).join("");
+  render();
+  dlg.close ? dlg.close() : dlg.removeAttribute("open");
+  toast("All data deleted.");
+});
+document.getElementById("btn-clear-sample").addEventListener("click", function(){
+  state = defaultState();
+  save(); render();
+  toast("Sample data cleared. The trackers are empty and ready.");
+});
+
+/* first run gets a sample so the page shows what it does, clearly labelled */
+if(!state.trackers.session.history.length && !state.trackers.weekly.history.length && !state.trackers.session.last_logged_at){
+  loadSample();
+} else {
+  render();
+}
+
+/* the clock keeps moving, so the live figures do too */
+setInterval(function(){
+  KEYS.forEach(function(k){
+    var panel = document.querySelector('.panel[data-key="' + k + '"]');
+    if(panel && !panel.querySelector('[data-slot="form"]').hidden) return; /* don't yank a form mid-drag */
+    renderPanel(k);
+  });
+}, 20000);
+
+})();
+</script>
+</body>
+</html>
