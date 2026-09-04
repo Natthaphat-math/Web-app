@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* ==========================================================================
+   Design tokens — shared with the apps in this collection.
+   ========================================================================== */
+:root{
+  --bg:#EFF1F0; --surface:#FBFBFA; --sunk:#E5E9E8; --hair:#D3DAD8; --hair-soft:#E2E7E6;
+  --ink:#101615; --ink-2:#4E5A58; --ink-3:#798583;
+  --accent:#0B6B5D; --accent-ink:#FFFFFF; --accent-soft:#DCEBE7;
+  --cool:#3E7FA6; --cool-soft:#DCE9F1;
+  --warm:#B07A0B; --warm-soft:#F5E8CC;
+  --hot:#B03826; --hot-soft:#F6DDD8;
+  --track:#DDE3E1;
+  --shadow:0 1px 2px rgba(16,22,21,.05),0 6px 18px -12px rgba(16,22,21,.28);
+  --shadow-lift:0 2px 4px rgba(16,22,21,.06),0 18px 38px -20px rgba(16,22,21,.42);
+  --sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+  --display:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1211; --surface:#161D1C; --sunk:#1D2625; --hair:#28322F; --hair-soft:#212B29;
+    --ink:#E7EDEB; --ink-2:#9AA8A5; --ink-3:#75827F;
+    --accent:#31BFA6; --accent-ink:#06201C; --accent-soft:#123029;
+    --cool:#74B4D8; --cool-soft:#132734;
+    --warm:#E3A93C; --warm-soft:#33280F;
+    --hot:#E8705C; --hot-soft:#361B16;
+    --track:#242E2C;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px -14px rgba(0,0,0,.8);
+    --shadow-lift:0 2px 6px rgba(0,0,0,.45),0 22px 44px -22px rgba(0,0,0,.95);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1211; --surface:#161D1C; --sunk:#1D2625; --hair:#28322F; --hair-soft:#212B29;
+  --ink:#E7EDEB; --ink-2:#9AA8A5; --ink-3:#75827F;
+  --accent:#31BFA6; --accent-ink:#06201C; --accent-soft:#123029;
+  --cool:#74B4D8; --cool-soft:#132734;
+  --warm:#E3A93C; --warm-soft:#33280F;
+  --hot:#E8705C; --hot-soft:#361B16;
+  --track:#242E2C;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px -14px rgba(0,0,0,.8);
+  --shadow-lift:0 2px 6px rgba(0,0,0,.45),0 22px 44px -22px rgba(0,0,0,.95);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--sans);
+  font-size:15px; line-height:1.5;
+  padding:18px 14px calc(56px + env(safe-area-inset-bottom));
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+/* ---- masthead ---- */
+.masthead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 16px;justify-content:space-between}
+.eyebrow{
+  margin:0;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);font-family:var(--mono);
+}
+.masthead h1{
+  font-family:var(--display);font-weight:700;font-size:23px;letter-spacing:-.015em;
+  margin:3px 0 0;text-wrap:balance;
+}
+.masthead .sub{margin:2px 0 0;color:var(--ink-2);font-size:12.5px;max-width:58ch}
+.tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+
+/* ---- buttons + chips ---- */
+.btn{
+  border:1px solid var(--hair);background:var(--surface);color:var(--ink);
+  border-radius:9px;padding:9px 13px;font-size:13.5px;font-weight:500;
+  transition:border-color .15s ease,background .15s ease,transform .06s ease;
+}
+.btn:hover{border-color:var(--ink-3)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.chip{
+  font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.01em;
+  padding:5px 9px;border-radius:999px;white-space:nowrap;
+  background:var(--sunk);color:var(--ink-2);border:1px solid var(--hair-soft);
+}
+.chip.small{font-size:10.5px;padding:3px 7px}
+.chip.tag{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+
+/* ---- filter bar ---- */
+.filterbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.search{position:relative;flex:1 1 220px;max-width:340px}
+.search input{
+  font:inherit;font-size:13.5px;width:100%;padding:9px 12px 9px 32px;border-radius:9px;
+  border:1px solid var(--hair);background:var(--surface);color:var(--ink);
+}
+.search input::placeholder{color:var(--ink-3)}
+.search svg{
+  position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  width:14px;height:14px;stroke:var(--ink-3);fill:none;stroke-width:1.8;pointer-events:none;
+}
+.count{font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
+
+/* ---- grid ---- */
+.grid{
+  display:grid;gap:18px;align-items:start;
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,310px),1fr));
+}
+
+/* ---- card ---- */
+.card{
+  position:relative;display:flex;flex-direction:column;
+  background:var(--surface);border:1px solid var(--hair);border-radius:15px;
+  box-shadow:var(--shadow);overflow:hidden;
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+.card:hover{border-color:var(--ink-3);box-shadow:var(--shadow-lift);transform:translateY(-2px)}
+.card:has(.link:focus-visible){outline:2.5px solid var(--accent);outline-offset:2px}
+
+/* ---- preview stage ---- */
+.stage{
+  position:relative;aspect-ratio:16/10;overflow:hidden;
+  background:var(--sunk);border-bottom:1px solid var(--hair-soft);
+}
+.shot{
+  position:absolute;top:0;left:0;border:0;display:block;
+  width:calc(100% / var(--zoom));
+  height:calc(100% / var(--zoom));
+  transform:scale(var(--zoom));
+  transform-origin:0 0;
+  pointer-events:none;               /* never interactive at a glance */
+  opacity:0;transition:opacity .35s ease;
+  background:var(--surface);
+}
+.card[data-preview="ready"] .shot{opacity:1}
+/* veil sits over the frame so nothing inside can be hovered or hit */
+.veil{
+  position:absolute;inset:0;z-index:2;
+  background:linear-gradient(180deg,transparent 60%,color-mix(in srgb,var(--ink) 5%,transparent));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 4%,transparent);
+}
+/* skeleton while the frame boots */
+.card[data-preview="idle"] .stage::after,
+.card[data-preview="loading"] .stage::after{
+  content:"";position:absolute;inset:0;z-index:1;background:var(--sunk);
+}
+.card[data-preview="loading"] .stage::after{
+  background:linear-gradient(100deg,var(--sunk) 30%,var(--hair-soft) 50%,var(--sunk) 70%);
+  background-size:300% 100%;animation:sweep 1.4s ease-in-out infinite;
+}
+@keyframes sweep{from{background-position:120% 0}to{background-position:-40% 0}}
+
+/* ---- fallback ---- */
+.fallback{
+  position:absolute;inset:0;z-index:1;display:none;
+  flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  background:var(--sunk);color:var(--ink-3);text-align:center;padding:16px;
+}
+.card[data-preview="failed"] .fallback{display:flex}
+.fallback svg{width:26px;height:26px;stroke:var(--ink-3);fill:none;stroke-width:1.5;opacity:.8}
+.fallback b{font-family:var(--display);font-size:13px;font-weight:600;color:var(--ink-2);letter-spacing:-.005em}
+.fallback span{font-family:var(--mono);font-size:10.5px;line-height:1.5;word-break:break-all;max-width:26ch}
+
+/* ---- card body ---- */
+.body{display:flex;flex-direction:column;gap:8px;padding:14px 15px 15px;flex:1}
+.card-head{display:flex;align-items:flex-start;gap:9px;justify-content:space-between}
+.card-head h2{
+  font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:-.01em;margin:0;
+  line-height:1.25;text-wrap:balance;
+}
+.link{color:inherit;text-decoration:none}
+.link::after{content:"";position:absolute;inset:0;z-index:4}  /* whole card is the hit area */
+.desc{margin:0;color:var(--ink-2);font-size:12.5px;line-height:1.5;flex:1}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-top:4px}
+.open{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);
+  border-radius:9px;padding:8px 12px;font-size:13px;font-weight:600;
+  transition:filter .15s ease;
+}
+.card:hover .open{filter:brightness(1.08)}
+.open .arw{transition:transform .18s ease}
+.card:hover .open .arw{transform:translateX(2px)}
+.file{
+  font-family:var(--mono);font-size:10.5px;color:var(--ink-3);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+/* ---- empty state ---- */
+.empty{
+  border:1px dashed var(--hair);border-radius:11px;padding:26px 16px;color:var(--ink-2);
+  font-size:13px;text-align:center;background:var(--sunk);
+}
+.foot{color:var(--ink-3);font-size:11.5px;text-align:center;line-height:1.6}
+.foot code{font-family:var(--mono);font-size:11px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">Collection</p>
+      <h1>My Tools</h1>
+      <p class="sub">Small, self-contained web apps. Every card is a live preview of the real file sitting next to this page.</p>
+    </div>
+    <div class="tools">
+      <span class="chip" id="count-chip"></span>
+      <button class="btn" id="btn-theme" aria-label="Switch colour theme">Theme</button>
+    </div>
+  </header>
+
+  <div class="filterbar" id="filterbar" hidden>
+    <div class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+      <input type="search" id="q" placeholder="Filter tools…" autocomplete="off" spellcheck="false" aria-label="Filter tools">
+    </div>
+    <span class="count" id="count-live"></span>
+  </div>
+
+  <main class="grid" id="grid"></main>
+  <p class="empty" id="empty" hidden>Nothing matches that filter.</p>
+
+  <p class="foot">Add a tool by dropping its <code>.html</code> file in this folder and adding one line to <code>APPS</code>.</p>
+</div>
+
+<script>
+/* ==========================================================================
+   THE ONLY THING YOU NEED TO EDIT
+   --------------------------------------------------------------------------
+   Add one object per app. All files live in this same folder.
+     file  — filename, relative to this page          (required)
+     title — display name                             (required)
+     desc  — one short line                           (required)
+     tag   — optional category chip
+     zoom  — optional preview scale. Lower = more of the app fits in the card.
+             Default 0.42 (~2.4x the card width of app viewport).
+   ========================================================================== */
+const APPS = [
+  {
+    file:  "claude-limits.html",
+    title: "Limit Pace",
+    desc:  "Claude Pro usage, logged by hand and paced against the rolling session and weekly windows.",
+    tag:   "tracker",
+    zoom:  0.4
+  },
+];
+
+/* ========================================================================== */
+
+const DEFAULT_ZOOM = 0.42;
+const grid = document.getElementById("grid");
+const emptyMsg = document.getElementById("empty");
+const filterbar = document.getElementById("filterbar");
+const qInput = document.getElementById("q");
+const countChip = document.getElementById("count-chip");
+const countLive = document.getElementById("count-live");
+
+/* ---- theme ---- */
+const THEME_KEY = "tools.theme";
+function applyTheme(t){
+  if(t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+  else document.documentElement.removeAttribute("data-theme");
+}
+function currentTheme(){
+  const saved = document.documentElement.getAttribute("data-theme");
+  if(saved) return saved;
+  return matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light";
+}
+try{ applyTheme(localStorage.getItem(THEME_KEY)); }catch(e){}
+/* Previews follow the gallery's theme where the browser allows it (served over
+   http). On file:// the frame is a foreign origin, so it keeps the OS theme. */
+function syncFrameTheme(frame){
+  try{
+    const d = frame.contentDocument;
+    if(!d || !d.documentElement) return;
+    const t = document.documentElement.getAttribute("data-theme");
+    t ? d.documentElement.setAttribute("data-theme", t)
+      : d.documentElement.removeAttribute("data-theme");
+  }catch(e){ /* cross-origin: leave the app alone */ }
+}
+document.getElementById("btn-theme").addEventListener("click", () => {
+  const next = currentTheme() === "dark" ? "light" : "dark";
+  applyTheme(next);
+  try{ localStorage.setItem(THEME_KEY, next); }catch(e){}
+  document.querySelectorAll(".card iframe").forEach(syncFrameTheme);
+});
+
+/* ---- render ---- */
+const esc = s => String(s).replace(/[&<>"']/g, c => (
+  {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]
+));
+
+const ICON_BROKEN =
+  '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z"/>' +
+  '<path d="M4 9h16"/><path d="m9.5 13.5 5 5m0-5-5 5"/></svg>';
+
+function cardFor(app){
+  const zoom = typeof app.zoom === "number" ? app.zoom : DEFAULT_ZOOM;
+  const el = document.createElement("article");
+  el.className = "card";
+  el.dataset.preview = "idle";
+  el.dataset.hay = [app.title, app.desc, app.tag, app.file].filter(Boolean).join(" ").toLowerCase();
+  el.innerHTML =
+    '<div class="stage" style="--zoom:' + zoom + '">' +
+      '<div class="fallback">' + ICON_BROKEN +
+        '<b>Preview unavailable</b><span>' + esc(app.file) + '</span>' +
+      '</div>' +
+      '<div class="veil"></div>' +
+    '</div>' +
+    '<div class="body">' +
+      '<div class="card-head">' +
+        '<h2><a class="link" href="' + esc(app.file) + '">' + esc(app.title) + '</a></h2>' +
+        (app.tag ? '<span class="chip small tag">' + esc(app.tag) + '</span>' : '') +
+      '</div>' +
+      '<p class="desc">' + esc(app.desc) + '</p>' +
+      '<div class="card-foot">' +
+        '<span class="open" aria-hidden="true">Open <span class="arw">&rarr;</span></span>' +
+        '<span class="file" title="' + esc(app.file) + '">' + esc(app.file) + '</span>' +
+      '</div>' +
+    '</div>';
+  el._app = app;
+  return el;
+}
+
+/* ---- preview loading, with a graceful fallback ---- */
+function mountPreview(card){
+  const app = card._app;
+  if(card.dataset.preview !== "idle") return;
+  card.dataset.preview = "loading";
+
+  const stage = card.querySelector(".stage");
+  const frame = document.createElement("iframe");
+  frame.className = "shot";
+  frame.src = app.file;
+  frame.title = app.title + " preview";
+  frame.tabIndex = -1;
+  frame.setAttribute("aria-hidden", "true");
+  frame.setAttribute("scrolling", "no");
+  frame.setAttribute("referrerpolicy", "no-referrer");
+
+  let settled = false;
+  const timer = setTimeout(() => fail(), 10000);
+  function ok(){
+    if(settled) return;
+    settled = true; clearTimeout(timer);
+    card.dataset.preview = "ready";
+    syncFrameTheme(frame);
+  }
+  function fail(){
+    if(settled) return;
+    settled = true; clearTimeout(timer);
+    card.dataset.preview = "failed";
+    frame.remove();
+  }
+
+  frame.addEventListener("error", fail);
+  frame.addEventListener("load", () => {
+    // Same-origin (served over http): an empty document means the file is
+    // missing or blank. Cross-origin / file:// throws — assume it rendered.
+    let doc = null;
+    try{ doc = frame.contentDocument; }catch(e){ return ok(); }
+    if(!doc) return ok();
+    const blank = d => !d.body || (d.body.children.length === 0 && !d.body.textContent.trim());
+    if(!blank(doc)) return ok();
+    // Give a JS-rendered app a beat to paint before calling it a failure.
+    setTimeout(() => {
+      let d = null;
+      try{ d = frame.contentDocument; }catch(e){ return ok(); }
+      (!d || blank(d)) ? fail() : ok();
+    }, 800);
+  });
+
+  // Over http(s) we can ask whether the file exists at all; file:// blocks this.
+  if(location.protocol === "http:" || location.protocol === "https:"){
+    fetch(app.file, {method:"HEAD"})
+      .then(r => { if(!r.ok) fail(); })
+      .catch(() => {});
+  }
+
+  stage.insertBefore(frame, stage.firstChild);
+}
+
+/* Only boot previews as cards come into view. */
+const io = "IntersectionObserver" in window
+  ? new IntersectionObserver((entries, obs) => {
+      for(const e of entries){
+        if(e.isIntersecting){ obs.unobserve(e.target); mountPreview(e.target); }
+      }
+    }, {rootMargin:"250px"})
+  : null;
+
+const cards = APPS.map(app => {
+  const el = cardFor(app);
+  grid.appendChild(el);
+  io ? io.observe(el) : mountPreview(el);
+  return el;
+});
+
+/* ---- counts + filter (only worth showing once there are a few) ---- */
+countChip.textContent = APPS.length + (APPS.length === 1 ? " tool" : " tools");
+if(APPS.length > 3){
+  filterbar.hidden = false;
+  const apply = () => {
+    const q = qInput.value.trim().toLowerCase();
+    let shown = 0;
+    for(const c of cards){
+      const hit = !q || c.dataset.hay.includes(q);
+      c.hidden = !hit;
+      if(hit) shown++;
+    }
+    emptyMsg.hidden = shown > 0;
+    countLive.textContent = q ? shown + " of " + cards.length : "";
+  };
+  qInput.addEventListener("input", apply);
+  apply();
+}
+if(APPS.length === 0){
+  emptyMsg.hidden = false;
+  emptyMsg.textContent = "No tools yet — add an entry to the APPS array in this file.";
+}
+</script>
+</body>
+</html>
