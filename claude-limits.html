@@ -64,7 +64,7 @@ body{
   margin:0;text-wrap:balance;
 }
 .masthead .sub{margin:2px 0 0;color:var(--ink-2);font-size:12.5px}
-.tools{display:flex;gap:7px;flex-wrap:wrap}
+.tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 
 /* ---- buttons ---- */
 button{font:inherit;cursor:pointer}
@@ -293,6 +293,16 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
 }
 .foot{color:var(--ink-3);font-size:11.5px;text-align:center;line-height:1.6}
 .foot code{font-family:var(--mono);font-size:11px}
+
+/* ---- sync ---- */
+.chip.sync{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.chip.sync.off{background:var(--sunk);color:var(--ink-3);border-color:var(--hair-soft)}
+.set .hint.bad{color:var(--hot)}
+.set .hint b{font-family:var(--mono);font-weight:600;color:var(--ink)}
+.sync-row{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center}
+.sync-row .btn{white-space:nowrap}
+@media(max-width:430px){.sync-row{grid-template-columns:1fr}}
+.sync-group{display:flex;flex-direction:column;gap:7px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -305,6 +315,7 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
       <p class="sub">Claude Pro usage, logged by hand and paced against the clock.</p>
     </div>
     <div class="tools">
+      <span class="chip small sync" id="sync-chip" hidden></span>
       <button class="btn" id="btn-settings">Settings &amp; data</button>
     </div>
   </header>
@@ -359,13 +370,32 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
       </div>
       <p class="hint">Your computed weekly reset is checked against this slot, and any drift is shown on the card.</p>
     </div>
+    <div class="set" id="sync-box" hidden>
+      <label>Sync across devices</label>
+      <p class="hint" id="sync-state">Not signed in — readings stay in this browser.</p>
+      <div class="sync-group" id="sync-signin" hidden>
+        <div class="sync-row">
+          <input type="email" id="sync-email" placeholder="you@example.com" autocomplete="email" inputmode="email" spellcheck="false">
+          <button class="btn" id="btn-sync-send">Email a link</button>
+        </div>
+        <p class="hint">Passwordless: Firebase emails a one-time link and opening it here signs you in — no password anywhere. Only the owner's address is accepted; everything else on this page works without signing in.</p>
+      </div>
+      <div class="sync-group" id="sync-active" hidden>
+        <div class="set-row">
+          <button class="btn" id="btn-sync-now">Sync now</button>
+          <button class="btn" id="btn-sync-out">Sign out</button>
+        </div>
+        <p class="hint">Readings merge across devices: new ones are added, duplicates skipped, and deletions travel too.</p>
+      </div>
+      <p class="hint" id="sync-msg" hidden></p>
+    </div>
     <div class="set">
       <label>Your data</label>
       <div class="set-row">
         <button class="btn" id="btn-export">Export JSON</button>
         <button class="btn" id="btn-import">Import JSON</button>
       </div>
-      <p class="hint">Import merges into what's already here: duplicate timestamps are skipped, and current values only change if the imported reading is newer.</p>
+      <p class="hint">Import merges into what's already here: duplicate timestamps are skipped, current values only change if the imported reading is newer, and readings deleted on the other device are removed here too.</p>
       <input type="file" id="file-input" accept="application/json,.json" hidden>
     </div>
     <button class="btn danger" id="btn-wipe">Delete all data</button>
@@ -378,6 +408,29 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
 
 var STORE_KEY = "claude-limits.v1";
 var KEYS = ["session","weekly"];
+var HIST_LIMIT = 5000;   /* readings kept per tracker after a merge */
+var TOMB_LIMIT = 400;    /* deletion markers kept per tracker */
+
+/* ---------------- optional cloud sync ----------------
+   Everything below is off until SYNC.config is filled in, and the app never touches
+   the network without it — the Firebase SDK is fetched on demand, at first sign-in.
+   Setup, and the Firestore rules that are the real gate, live in FIREBASE-SETUP.md. */
+var SYNC = {
+  /* Firebase console → Project settings → Your apps → Web app → SDK setup (Config) */
+  config: {
+    apiKey: "AIzaSyBSZuYr9JZuygHKHgeUqgTodpVpLQs1pvI",
+    authDomain: "claude-limit-pace.firebaseapp.com",
+    projectId: "claude-limit-pace",
+    appId: "1:266319298433:web:264a351d027438f5967280"
+  },
+  /* The only address this page will request a sign-in link for — a courtesy check so
+     the button doesn't lie to anyone else. Access is actually enforced by the Firestore
+     rules, which name your address and your account's UID. Leave it empty if you'd
+     rather not put your email in a page you publish; the rules still lock it down. */
+  ownerEmail: "sp1d3rman@duck.com",
+  sdkVersion: "11.0.2",   /* bump if gstatic 404s; the URLs below need an exact version */
+  collection: "limitPace"
+};
 var DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 var DAY_ABBR  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
@@ -389,7 +442,7 @@ var META = {
 /* ---------------- state ---------------- */
 
 function blankTracker(hours){
-  return { duration_hours:hours, last_logged_at:null, time_until_reset_minutes:null, percent_used:null, history:[] };
+  return { duration_hours:hours, last_logged_at:null, time_until_reset_minutes:null, percent_used:null, history:[], deleted:[] };
 }
 function defaultState(){
   return {
@@ -414,24 +467,41 @@ function load(){
 function normalizeState(obj){
   var base = defaultState();
   if(!obj || typeof obj !== "object") return base;
-  if(obj.settings){
-    if(typeof obj.settings.weekly_reset_day === "number") base.settings.weekly_reset_day = obj.settings.weekly_reset_day;
-    if(typeof obj.settings.weekly_reset_time === "string") base.settings.weekly_reset_time = obj.settings.weekly_reset_time;
-    if(isNum(obj.settings.session_reset_grid) && obj.settings.session_reset_grid >= 1) base.settings.session_reset_grid = obj.settings.session_reset_grid;
+  /* this validator is the only door state comes through — a file import and a
+     document pulled out of Firestore both land here, so it stays paranoid */
+  if(obj.settings && typeof obj.settings === "object"){
+    if(isNum(obj.settings.weekly_reset_day)) base.settings.weekly_reset_day = clamp(Math.round(obj.settings.weekly_reset_day), 0, 6);
+    if(typeof obj.settings.weekly_reset_time === "string" && /^\d{1,2}:\d{2}$/.test(obj.settings.weekly_reset_time)) base.settings.weekly_reset_time = obj.settings.weekly_reset_time;
+    if(isNum(obj.settings.session_reset_grid)) base.settings.session_reset_grid = clamp(Math.round(obj.settings.session_reset_grid), 1, 60);
   }
   base.sample = !!obj.sample;
   KEYS.forEach(function(k){
     var src = obj.trackers && obj.trackers[k];
     if(!src) return;
     var dst = base.trackers[k];
-    if(isNum(src.duration_hours) && src.duration_hours > 0) dst.duration_hours = src.duration_hours;
+    if(isNum(src.duration_hours) && src.duration_hours > 0) dst.duration_hours = clamp(src.duration_hours, 0.25, 8760);
     if(src.last_logged_at && isFinite(new Date(src.last_logged_at).getTime())) dst.last_logged_at = new Date(src.last_logged_at).toISOString();
-    if(isNum(src.time_until_reset_minutes)) dst.time_until_reset_minutes = src.time_until_reset_minutes;
-    if(isNum(src.percent_used)) dst.percent_used = src.percent_used;
+    if(isNum(src.time_until_reset_minutes)) dst.time_until_reset_minutes = clamp(Math.round(src.time_until_reset_minutes), 0, 8760*60);
+    if(isNum(src.percent_used)) dst.percent_used = clamp(Math.round(src.percent_used), 0, 100);
     dst.history = normalizeHistory(src.history);
+    dst.deleted = normalizeStamps(src.deleted);
   });
   return base;
 }
+/* deletion markers: plain ISO strings, deduped, capped. ISO sorts chronologically. */
+function normalizeStamps(list){
+  if(!Array.isArray(list)) return [];
+  var seen = {}, out = [];
+  list.slice(0, TOMB_LIMIT * 4).forEach(function(v){
+    if(typeof v !== "string" && typeof v !== "number") return;
+    var d = new Date(v);
+    if(!isFinite(d.getTime())) return;
+    var iso = d.toISOString();
+    if(!seen[iso]){ seen[iso] = 1; out.push(iso); }
+  });
+  return pruneStamps(out);
+}
+function pruneStamps(list){ return list.sort().slice(-TOMB_LIMIT); }
 function normalizeHistory(list){
   if(!Array.isArray(list)) return [];
   var out = [];
@@ -439,7 +509,7 @@ function normalizeHistory(list){
     var n = normalizeEntry(e);
     if(n) out.push(n);
   });
-  return sortHistory(out);
+  return sortHistory(out).slice(-HIST_LIMIT);
 }
 function normalizeEntry(e){
   if(!e || typeof e !== "object") return null;
@@ -463,9 +533,10 @@ function sortHistory(list){
 function isNum(v){ return typeof v === "number" && isFinite(v); }
 function clamp(v,lo,hi){ return Math.min(hi, Math.max(lo, v)); }
 
-function save(){
+function save(opts){
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
   catch(e){ toast("Couldn't save to this browser's storage. Export your data to keep it."); }
+  if(!(opts && opts.push === false)) syncPush(false);
 }
 
 /* ---------------- core calculation ---------------- */
@@ -810,7 +881,7 @@ function renderHistory(key, panel, t){
     var pl = (p === null || !isFinite(p)) ? "n/a" : p.toFixed(2) + "×";
     return '<li>' +
       '<span class="h-time">' + esc(fmtWhen(new Date(e.timestamp))) + '</span>' +
-      '<span class="h-main">' + e.percent_used + '% <em>used · ' + esc(fmtDuration(e.time_until_reset_minutes)) + ' left · reset ' + esc(fmtClock(new Date(e.computed_reset_time))) + '</em></span>' +
+      '<span class="h-main">' + esc(e.percent_used) + '% <em>used · ' + esc(fmtDuration(e.time_until_reset_minutes)) + ' left · reset ' + esc(fmtClock(new Date(e.computed_reset_time))) + '</em></span>' +
       '<span class="chip small ' + cls + '">' + pl + '</span>' +
       '<button class="del" data-act="del" data-ts="' + esc(e.timestamp) + '" title="Delete this reading" aria-label="Delete reading from ' + esc(fmtWhen(new Date(e.timestamp))) + '">×</button>' +
       '</li>';
@@ -857,7 +928,7 @@ function sparkHTML(hist, durationHours){
     var last = i === pts.length-1;
     var cls = paceClass(pt.p);
     svg += '<circle class="dot ' + cls + '" cx="' + X(pt).toFixed(1) + '" cy="' + Y(pt.p).toFixed(1) + '" r="' + (last?4.2:2.6) + '">' +
-           '<title>' + esc(fmtWhen(new Date(pt.e.timestamp))) + " — " + pt.e.percent_used + "% used, " + pt.p.toFixed(2) + "× pace" + '</title></circle>';
+           '<title>' + esc(fmtWhen(new Date(pt.e.timestamp))) + " — " + esc(pt.e.percent_used) + "% used, " + pt.p.toFixed(2) + "× pace" + '</title></circle>';
   });
   svg += '</svg>';
   return svg;
@@ -991,6 +1062,63 @@ function submitEntry(panel){
   toast("Logged at " + fmtClock(now) + " · " + META[key].title.toLowerCase() + " resets " + fmtWhen(new Date(entry.computed_reset_time)) + ".");
 }
 
+/* ---------------- merge ---------------- */
+
+/* The one merge used by both a file import and a pull from the cloud: history is a
+   union deduped by exact timestamp with the existing copy winning, deletions travel
+   as tombstones so a reading removed on one device stays removed on the other, and
+   current values only move if the incoming reading is more recent. Never replaces. */
+function mergeInto(incoming){
+  var added = 0, dupes = 0, currents = [];
+  KEYS.forEach(function(key){
+    var cur = state.trackers[key];
+    var inc = incoming.trackers && incoming.trackers[key];
+    if(!inc) return;
+
+    var tomb = {};
+    (cur.deleted || []).forEach(function(ts){ tomb[ts] = 1; });
+    normalizeStamps(inc.deleted).forEach(function(ts){ tomb[ts] = 1; });
+
+    var byTs = new Map();
+    cur.history.forEach(function(e){ byTs.set(e.timestamp, e); });
+    normalizeHistory(inc.history).forEach(function(e){
+      if(byTs.has(e.timestamp)) dupes++;
+      else if(!tomb[e.timestamp]) { byTs.set(e.timestamp, e); added++; }
+    });
+    Object.keys(tomb).forEach(function(ts){ byTs.delete(ts); });
+
+    cur.history = sortHistory(Array.from(byTs.values())).slice(-HIST_LIMIT);
+    cur.deleted = pruneStamps(Object.keys(tomb));
+
+    /* current values: incoming wins only if its reading is more recent */
+    var incAt = inc.last_logged_at && isFinite(new Date(inc.last_logged_at).getTime()) ? new Date(inc.last_logged_at).getTime() : -Infinity;
+    var curAt = cur.last_logged_at ? new Date(cur.last_logged_at).getTime() : -Infinity;
+    if(incAt > curAt && isNum(inc.time_until_reset_minutes) && isNum(inc.percent_used)){
+      cur.last_logged_at = new Date(inc.last_logged_at).toISOString();
+      cur.time_until_reset_minutes = clamp(Math.round(inc.time_until_reset_minutes), 0, 8760*60);
+      cur.percent_used = clamp(Math.round(inc.percent_used), 0, 100);
+      currents.push(META[key].title.toLowerCase());
+    }
+    reconcileCurrent(cur);
+  });
+  return { added:added, dupes:dupes, currents:currents };
+}
+
+/* a tombstone can take out the very entry the current values point at */
+function reconcileCurrent(t){
+  if(!t.last_logged_at) return;
+  var still = t.history.some(function(e){ return e.timestamp === t.last_logged_at; });
+  if(still) return;
+  var last = t.history[t.history.length - 1];
+  if(last){
+    t.last_logged_at = last.timestamp;
+    t.time_until_reset_minutes = last.time_until_reset_minutes;
+    t.percent_used = last.percent_used;
+  } else {
+    t.last_logged_at = null; t.time_until_reset_minutes = null; t.percent_used = null;
+  }
+}
+
 /* ---------------- export / import ---------------- */
 
 function exportData(){
@@ -1017,32 +1145,8 @@ function importData(raw){
   if(!incoming || !incoming.trackers){ toast("No tracker data in that file — nothing was changed."); return; }
   clearSampleData();
 
-  var added = 0, dupes = 0, currentsUpdated = [];
-
-  KEYS.forEach(function(key){
-    var cur = state.trackers[key];
-    var inc = incoming.trackers[key];
-    if(!inc) return;
-
-    /* dedupe history by timestamp, existing copy wins, then re-sort */
-    var byTs = new Map();
-    cur.history.forEach(function(e){ byTs.set(e.timestamp, e); });
-    normalizeHistory(inc.history).forEach(function(e){
-      if(byTs.has(e.timestamp)) dupes++;
-      else { byTs.set(e.timestamp, e); added++; }
-    });
-    cur.history = sortHistory(Array.from(byTs.values()));
-
-    /* current values: imported wins only if its reading is more recent */
-    var incAt = inc.last_logged_at && isFinite(new Date(inc.last_logged_at).getTime()) ? new Date(inc.last_logged_at).getTime() : -Infinity;
-    var curAt = cur.last_logged_at ? new Date(cur.last_logged_at).getTime() : -Infinity;
-    if(incAt > curAt && isNum(inc.time_until_reset_minutes) && isNum(inc.percent_used)){
-      cur.last_logged_at = new Date(inc.last_logged_at).toISOString();
-      cur.time_until_reset_minutes = Math.round(inc.time_until_reset_minutes);
-      cur.percent_used = clamp(Math.round(inc.percent_used), 0, 100);
-      currentsUpdated.push(META[key].title.toLowerCase());
-    }
-  });
+  var r = mergeInto(incoming);
+  var added = r.added, dupes = r.dupes, currentsUpdated = r.currents;
 
   save();
   render();
@@ -1108,6 +1212,290 @@ function loadSample(){
   render();
 }
 
+/* ---------------- sync ----------------
+
+   Off unless SYNC.config is filled in. Signed out, this file behaves exactly as it
+   always has: localStorage only, no network beyond the fonts stylesheet. The Firebase
+   SDK is loaded on demand — the first sign-in, or a page load that already has a
+   session — so a reader who never signs in never fetches it.
+
+   The document is one JSON string per account at limitPace/{uid}, which is what lets
+   the Firestore rules validate every write (see FIREBASE-SETUP.md). Everything that
+   comes back out of it is re-validated by normalizeState() before it touches state,
+   and escaped by esc() before it touches innerHTML. */
+
+var EMAIL_KEY = STORE_KEY + ".sync-email";
+var FLAG_KEY  = STORE_KEY + ".sync-on";
+var PAYLOAD_MAX = 250000;   /* stay well under the 300 KB the rules allow */
+
+var sync = { user:null, unsub:null, busy:false, msg:"", msgBad:false, lastSynced:null, pushTimer:null };
+
+function syncConfigured(){ return !!(SYNC.config.apiKey && SYNC.config.projectId); }
+function syncPossible(){
+  return syncConfigured() && (location.protocol === "https:" || location.protocol === "http:");
+}
+function syncMsg(text, bad){ sync.msg = text || ""; sync.msgBad = !!bad; }
+function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+function lsSet(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+function lsDel(k){ try { localStorage.removeItem(k); } catch(e){} }
+
+/* ---- the SDK, fetched once, on demand ---- */
+var sdkPromise = null;
+function loadSdk(){
+  if(sdkPromise) return sdkPromise;
+  var base = "https://www.gstatic.com/firebasejs/" + SYNC.sdkVersion + "/";
+  sdkPromise = Promise.all([
+    import(base + "firebase-app.js"),
+    import(base + "firebase-auth.js"),
+    import(base + "firebase-firestore.js")
+  ]).then(function(m){
+    var app = m[0].initializeApp(SYNC.config);
+    return { auth:m[1].getAuth(app), db:m[2].getFirestore(app), a:m[1], f:m[2] };
+  })["catch"](function(err){
+    sdkPromise = null;
+    throw err;
+  });
+  return sdkPromise;
+}
+
+/* ---- session ---- */
+function syncStart(){
+  return loadSdk().then(function(fb){
+    fb.a.onAuthStateChanged(fb.auth, function(user){
+      sync.user = user || null;
+      if(sync.unsub){ sync.unsub(); sync.unsub = null; }
+      if(user){
+        lsSet(FLAG_KEY, "1");
+        watchDoc(fb, user);
+      } else {
+        lsDel(FLAG_KEY);
+      }
+      renderSync();
+    });
+    return fb;
+  });
+}
+
+function docRef(fb, user){ return fb.f.doc(fb.db, SYNC.collection, user.uid); }
+
+function watchDoc(fb, user){
+  sync.unsub = fb.f.onSnapshot(docRef(fb, user), function(snap){
+    applyRemote(snap.exists() ? parseRemote(snap.data()) : null);
+  }, function(err){
+    syncMsg(firestoreError(err), true);
+    renderSync();
+  });
+}
+
+/* the cloud document is untrusted input like any imported file */
+function parseRemote(data){
+  var payload = data && data.payload;
+  if(typeof payload !== "string" || !payload || payload.length > PAYLOAD_MAX * 2) return null;
+  var obj;
+  try { obj = JSON.parse(payload); } catch(e){ return null; }
+  if(!obj || typeof obj !== "object" || !obj.trackers) return null;
+  return normalizeState(obj);
+}
+
+/* what actually goes up: local state, minus the sample flag */
+function syncPayload(){
+  var o = JSON.parse(JSON.stringify(state));
+  o.sample = false;
+  return o;
+}
+
+/* a stable shape for "are these two the same data?", used to stop the snapshot of
+   our own write from bouncing straight back as another write */
+function canonical(st){
+  return JSON.stringify([st.settings, KEYS.map(function(k){
+    var t = st.trackers[k];
+    return [t.duration_hours, t.last_logged_at, t.time_until_reset_minutes, t.percent_used,
+      t.history.map(function(e){ return [e.timestamp, e.time_until_reset_minutes, e.percent_used, e.computed_reset_time]; }),
+      (t.deleted || []).slice().sort()];
+  })]);
+}
+
+function applyRemote(remote){
+  sync.lastSynced = new Date();
+  if(remote){
+    clearSampleData();
+    mergeInto(remote);
+    save({push:false});
+    render();
+  }
+  /* push back only when the merge left us holding something the cloud lacks */
+  if(!remote || canonical(state) !== canonical(remote)) syncPush(true);
+  renderSync();
+}
+
+/* ---- writing ---- */
+function syncPush(immediate){
+  if(!sync.user || state.sample) return;
+  clearTimeout(sync.pushTimer);
+  sync.pushTimer = setTimeout(pushNow, immediate ? 200 : 1500);
+}
+function pushNow(){
+  if(!sync.user || state.sample) return;
+  var payload = JSON.stringify(syncPayload());
+  if(payload.length > PAYLOAD_MAX){
+    syncMsg("Too much history to sync (" + Math.round(payload.length/1024) + " KB). Export and trim the oldest readings.", true);
+    renderSync();
+    return;
+  }
+  loadSdk().then(function(fb){
+    if(!sync.user) return null;
+    return fb.f.setDoc(docRef(fb, sync.user), {
+      schema: 1,
+      payload: payload,
+      updated_at: fb.f.serverTimestamp()
+    });
+  }).then(function(){
+    sync.lastSynced = new Date();
+    if(!sync.msgBad) syncMsg("");
+    renderSync();
+  })["catch"](function(err){
+    syncMsg(firestoreError(err), true);
+    renderSync();
+  });
+}
+
+/* ---- sign in / out ---- */
+function sendSignInLink(address){
+  var addr = String(address || "").trim();
+  if(!addr){ syncMsg("Enter your email address first.", true); renderSync(); return; }
+  if(SYNC.ownerEmail && addr.toLowerCase() !== String(SYNC.ownerEmail).toLowerCase()){
+    syncMsg("This copy only syncs the owner's account — but every other feature on the page works without signing in.", true);
+    renderSync();
+    return;
+  }
+  sync.busy = true; syncMsg("Sending…"); renderSync();
+  loadSdk().then(function(fb){
+    return fb.a.sendSignInLinkToEmail(fb.auth, addr, {
+      url: location.origin + location.pathname,
+      handleCodeInApp: true
+    });
+  }).then(function(){
+    lsSet(EMAIL_KEY, addr);
+    sync.busy = false;
+    syncMsg("Link sent to " + addr + ". Open it in this browser — the tab it opens is the one that signs in.");
+    renderSync();
+  })["catch"](function(err){
+    sync.busy = false;
+    syncMsg(authError(err), true);
+    renderSync();
+  });
+}
+
+function finishSignInLink(){
+  loadSdk().then(function(fb){
+    if(!fb.a.isSignInWithEmailLink(fb.auth, location.href)) return null;
+    var email = lsGet(EMAIL_KEY) || "";
+    if(!email) email = window.prompt("Confirm the email address the sign-in link was sent to:") || "";
+    if(!email){ syncMsg("Sign-in cancelled — nothing was changed.", true); renderSync(); return null; }
+    return fb.a.signInWithEmailLink(fb.auth, email, location.href).then(function(){
+      lsDel(EMAIL_KEY);
+      history.replaceState(null, "", location.origin + location.pathname);
+      syncMsg("");
+      toast("Signed in. Readings on this device now sync to your account.");
+    });
+  })["catch"](function(err){
+    syncMsg(authError(err), true);
+    renderSync();
+  });
+}
+
+function syncSignOut(){
+  loadSdk().then(function(fb){ return fb.a.signOut(fb.auth); }).then(function(){
+    lsDel(FLAG_KEY);
+    syncMsg("Signed out. Your readings stay in this browser.");
+    renderSync();
+    toast("Signed out. This device is back to local-only.");
+  })["catch"](function(err){ syncMsg(authError(err), true); renderSync(); });
+}
+
+function syncNow(){
+  if(!sync.user) return;
+  syncMsg("Syncing…"); renderSync();
+  loadSdk().then(function(fb){ return fb.f.getDoc(docRef(fb, sync.user)); })
+    .then(function(snap){
+      applyRemote(snap.exists() ? parseRemote(snap.data()) : null);
+      if(!sync.msgBad) syncMsg("");
+      renderSync();
+      toast("Synced at " + fmtClock(new Date()) + ".");
+    })["catch"](function(err){ syncMsg(firestoreError(err), true); renderSync(); });
+}
+
+/* ---- error text worth reading ---- */
+function authError(err){
+  var code = (err && err.code) || "";
+  if(code === "auth/invalid-email") return "That isn't a valid email address.";
+  if(code === "auth/missing-email") return "Enter your email address first.";
+  if(code === "auth/operation-not-allowed") return "Email link sign-in isn't switched on yet in the Firebase console (Authentication → Sign-in method).";
+  if(code === "auth/unauthorized-continue-uri" || code === "auth/invalid-continue-uri")
+    return "Firebase won't accept this page's address. Add " + location.hostname + " under Authentication → Settings → Authorized domains.";
+  if(code === "auth/invalid-action-code" || code === "auth/expired-action-code")
+    return "That link has already been used or has expired. Send a fresh one.";
+  if(code === "auth/too-many-requests") return "Too many attempts — wait a few minutes and try again.";
+  if(code === "auth/network-request-failed") return "No network — sign-in couldn't reach Firebase.";
+  if(code) return "Sign-in failed (" + code + ").";
+  return "Sign-in failed. The browser console has the details.";
+}
+function firestoreError(err){
+  var code = (err && err.code) || "";
+  if(code === "permission-denied") return "The Firestore rules rejected this account. Check the UID and email in the rules.";
+  if(code === "unavailable") return "Can't reach Firestore right now — this device will retry.";
+  if(code === "failed-precondition") return "Firestore refused the write. Check the rules against the document shape in FIREBASE-SETUP.md.";
+  if(code) return "Sync failed (" + code + ").";
+  return "Sync failed. The browser console has the details.";
+}
+
+/* ---- UI ---- */
+function renderSync(){
+  var chip  = document.getElementById("sync-chip");
+  var box   = document.getElementById("sync-box");
+  var line  = document.getElementById("sync-state");
+  var form  = document.getElementById("sync-signin");
+  var live  = document.getElementById("sync-active");
+  var msg   = document.getElementById("sync-msg");
+  if(!box) return;
+
+  if(!syncConfigured()){ box.hidden = true; chip.hidden = true; return; }
+  box.hidden = false;
+
+  if(!syncPossible()){
+    line.textContent = "Signing in needs the page served over https (or localhost) — this copy is open straight from a file, so it stays local-only.";
+    form.hidden = true; live.hidden = true; chip.hidden = true;
+  } else if(sync.user){
+    line.innerHTML = "Signed in as <b>" + esc(sync.user.email || "your account") + "</b>." +
+      (sync.lastSynced ? " Last sync " + esc(fmtClock(sync.lastSynced)) + "." : "");
+    form.hidden = true; live.hidden = false;
+    chip.hidden = false; chip.className = "chip small sync"; chip.textContent = "Synced";
+  } else {
+    line.textContent = "Not signed in — readings stay in this browser.";
+    form.hidden = false; live.hidden = true;
+    chip.hidden = true;
+  }
+  msg.hidden = !sync.msg;
+  msg.textContent = sync.msg;
+  msg.className = "hint" + (sync.msgBad ? " bad" : "");
+  var send = document.getElementById("btn-sync-send");
+  if(send) send.disabled = !!sync.busy;
+}
+
+/* ---- boot ---- */
+function syncBoot(){
+  renderSync();
+  if(!syncPossible()) return;
+  var isLink = /[?&#](oobCode|mode)=/.test(location.search + location.hash);
+  if(!isLink && lsGet(FLAG_KEY) !== "1") return;   /* nothing to restore: don't touch the network */
+  syncStart().then(function(){
+    if(isLink) finishSignInLink();
+  })["catch"](function(err){
+    syncMsg("Couldn't load the Firebase SDK. Sync is unavailable; everything else still works.", true);
+    renderSync();
+  });
+}
+
 /* ---------------- toast ---------------- */
 
 var toastTimer = null, toastEl = null;
@@ -1154,11 +1542,8 @@ grid.addEventListener("click", function(ev){
     var key = panel.getAttribute("data-key");
     var t = state.trackers[key];
     t.history = t.history.filter(function(e){ return e.timestamp !== ts; });
-    if(t.last_logged_at === ts){
-      var last = t.history[t.history.length-1];
-      if(last){ t.last_logged_at = last.timestamp; t.time_until_reset_minutes = last.time_until_reset_minutes; t.percent_used = last.percent_used; }
-      else { t.last_logged_at = null; t.time_until_reset_minutes = null; t.percent_used = null; }
-    }
+    t.deleted = pruneStamps((t.deleted || []).concat([ts]));   /* so the delete survives a merge */
+    reconcileCurrent(t);
     save(); render(); toast("Reading deleted.");
   }
 });
@@ -1190,11 +1575,12 @@ document.getElementById("btn-settings").addEventListener("click", function(){
   document.getElementById("w-day").value = String(clamp(state.settings.weekly_reset_day,0,6));
   document.getElementById("s-grid").value = String(state.settings.session_reset_grid || 10);
   document.getElementById("w-time").value = state.settings.weekly_reset_time;
+  renderSync();
   if(dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","");
 });
 document.getElementById("btn-close-settings").addEventListener("click", function(){ dlg.close ? dlg.close() : dlg.removeAttribute("open"); });
 dlg.addEventListener("change", function(ev){
-  if(ev.target.id === "file-input") return;
+  if(ev.target.id === "file-input" || ev.target.id === "sync-email") return;
   var sd = parseFloat(document.getElementById("s-dur").value);
   var wd = parseFloat(document.getElementById("w-dur").value);
   if(isNum(sd) && sd > 0) state.trackers.session.duration_hours = sd;
@@ -1209,13 +1595,24 @@ dlg.addEventListener("change", function(ev){
 });
 document.getElementById("btn-wipe").addEventListener("click", function(){
   if(!confirm("Delete every logged reading and reset the settings? This can't be undone.")) return;
+  var graves = {};
+  KEYS.forEach(function(k){
+    graves[k] = state.sample ? [] : state.trackers[k].history.map(function(e){ return e.timestamp; });
+  });
   state = defaultState();
+  KEYS.forEach(function(k){ state.trackers[k].deleted = pruneStamps(graves[k]); });
   save();
   grid.innerHTML = KEYS.map(panelHTML).join("");
   render();
   dlg.close ? dlg.close() : dlg.removeAttribute("open");
   toast("All data deleted.");
 });
+var syncEmail = document.getElementById("sync-email");
+document.getElementById("btn-sync-send").addEventListener("click", function(){ sendSignInLink(syncEmail.value); });
+syncEmail.addEventListener("keydown", function(ev){ if(ev.key === "Enter"){ ev.preventDefault(); sendSignInLink(syncEmail.value); } });
+document.getElementById("btn-sync-now").addEventListener("click", syncNow);
+document.getElementById("btn-sync-out").addEventListener("click", syncSignOut);
+
 document.getElementById("btn-clear-sample").addEventListener("click", function(){
   clearSampleData();
   save(); render();
@@ -1228,6 +1625,8 @@ if(!state.trackers.session.history.length && !state.trackers.weekly.history.leng
 } else {
   render();
 }
+
+syncBoot();
 
 /* the clock keeps moving, so the live figures do too */
 setInterval(function(){
