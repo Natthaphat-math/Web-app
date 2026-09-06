@@ -198,6 +198,12 @@ button{font:inherit;cursor:pointer}
 .tick:hover{color:var(--ink)}
 .tick.on{color:var(--accent);font-weight:600;background:var(--accent-soft)}
 .tick.on::before{background:var(--accent)}
+.range-note{margin:-3px 0 0;font-size:11.5px;line-height:1.45;color:var(--ink-3)}
+.range-note b{font-family:var(--mono);font-weight:600;color:var(--ink-2)}
+.linkish{
+  border:0;background:none;padding:0;font:inherit;color:var(--accent);font-weight:600;
+  text-decoration:underline;text-underline-offset:2px;
+}
 .form-hint{
   margin:-4px 0 0;font-size:12px;line-height:1.45;color:var(--ink-2);
   border-left:2.5px solid var(--hair);padding-left:10px;
@@ -266,22 +272,37 @@ input[type=range]::-moz-range-thumb{
 .more{align-self:flex-start;margin-top:9px;font-size:12px;color:var(--accent);background:none;border:0;padding:4px 0;font-weight:500}
 
 /* ---- dialog ---- */
+/* the dialog itself never scrolls — the body does, so the header and its Close
+   button stay put no matter how far down the settings you are */
 dialog{
   border:1px solid var(--hair);background:var(--surface);color:var(--ink);border-radius:14px;
   padding:0;max-width:400px;width:calc(100% - 28px);box-shadow:0 24px 60px -20px rgba(0,0,0,.45);
+  max-height:min(88dvh,88vh);overflow:hidden;
 }
+dialog[open]{display:flex;flex-direction:column}
 dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
-.dlg-head{display:flex;justify-content:space-between;align-items:center;padding:15px 16px 0}
+.dlg-head{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:15px 16px 12px;flex:0 0 auto;
+  background:var(--surface);border-bottom:1px solid var(--hair-soft);
+}
 .dlg-head h2{margin:0;font-family:var(--display);font-size:17px;font-weight:600}
-.dlg-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px}
+.dlg-body{
+  padding:14px 16px calc(16px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;gap:14px;
+  flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+}
 .set{display:flex;flex-direction:column;gap:5px}
 .set label{font-size:12px;color:var(--ink-2);font-weight:500}
 .set input,.set select{
   font:inherit;font-family:var(--mono);font-size:14px;padding:9px 10px;border-radius:8px;
-  border:1px solid var(--hair);background:var(--bg);color:var(--ink);width:100%;
+  border:1px solid var(--hair);background:var(--bg);color:var(--ink);
+  width:100%;min-width:0;max-width:100%;
 }
-.set .hint{font-size:11.5px;color:var(--ink-3);line-height:1.4}
+.set .hint{font-size:11.5px;color:var(--ink-3);line-height:1.4;overflow-wrap:anywhere}
 .set-row{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.set-row>*{min-width:0}
 .danger{color:var(--hot);border-color:color-mix(in srgb,var(--hot) 40%,transparent)}
 
 /* ---- toast ---- */
@@ -300,6 +321,7 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
 .set .hint.bad{color:var(--hot)}
 .set .hint b{font-family:var(--mono);font-weight:600;color:var(--ink)}
 .sync-row{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center}
+.sync-row>*{min-width:0}
 .sync-row .btn{white-space:nowrap}
 @media(max-width:430px){.sync-row{grid-template-columns:1fr}}
 .sync-group{display:flex;flex-direction:column;gap:7px}
@@ -378,7 +400,14 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
           <input type="email" id="sync-email" placeholder="you@example.com" autocomplete="email" inputmode="email" spellcheck="false">
           <button class="btn" id="btn-sync-send">Email a link</button>
         </div>
-        <p class="hint">Passwordless: Firebase emails a one-time link and opening it here signs you in — no password anywhere. Only the owner's address is accepted; everything else on this page works without signing in.</p>
+        <p class="hint">Passwordless: Firebase emails a one-time link and opening it here signs you in — no password anywhere. Only the owner's account can sync; everything else on this page works without signing in.</p>
+        <div class="sync-group" id="sync-paste" hidden>
+          <div class="sync-row">
+            <input type="url" id="sync-link" placeholder="…or paste the link" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <button class="btn" id="btn-sync-paste">Sign in</button>
+          </div>
+          <p class="hint">Added this to your home screen? Tapping the link opens Safari, which keeps its own separate storage — so the sign-in lands there and this app stays signed out. In Mail, long-press the link, choose <b>Copy Link</b>, and paste it here instead.</p>
+        </div>
       </div>
       <div class="sync-group" id="sync-active" hidden>
         <div class="set-row">
@@ -424,10 +453,11 @@ var SYNC = {
     appId: "1:266319298433:web:264a351d027438f5967280"
   },
   /* The only address this page will request a sign-in link for — a courtesy check so
-     the button doesn't lie to anyone else. Access is actually enforced by the Firestore
-     rules, which name your address and your account's UID. Leave it empty if you'd
-     rather not put your email in a page you publish; the rules still lock it down. */
-  ownerEmail: "sp1d3rman@duck.com",
+     the button doesn't lie to anyone else. Deliberately empty here: this page is served
+     from a public repo, and the address would be scrapeable in it. Access is enforced by
+     the Firestore rules, which name the address and the account's UID, so leaving this
+     blank costs a friendlier error message and nothing else. */
+  ownerEmail: "",
   sdkVersion: "11.0.2",   /* bump if gstatic 404s; the URLs below need an exact version */
   collection: "limitPace"
 };
@@ -675,14 +705,64 @@ function sliderCfg(t){
 
 /* ---------------- panel markup ---------------- */
 
-function tickScale(name, max, step, unit){
+function tickScale(name, min, max, step, unit){
+  var span = max - min, marks = [], v;
+  if(min > 0){
+    /* a trimmed scale: the floor and the ceiling both get a mark, and the round
+       numbers in between only when they don't crowd either end */
+    marks.push(min);
+    for(v = Math.ceil((min + step*0.6) / step) * step; v < max; v += step) marks.push(v);
+    if(marks.length > 1 && max - marks[marks.length-1] < step*0.6) marks.pop();
+    if(marks[marks.length-1] !== max) marks.push(max);
+  } else {
+    for(v = 0; v <= max; v += step) marks.push(v);
+  }
+
   var out = '<div class="ticks">';
-  for(var v = 0; v <= max; v += step){
-    var pos = "calc(16px + " + (max ? v/max : 0) + " * (100% - 32px))";
+  marks.forEach(function(v){
+    var pos = "calc(16px + " + (span ? (v - min)/span : 0) + " * (100% - 32px))";
     out += '<button type="button" class="tick" data-tick="' + name + '" data-v="' + v + '" style="left:' + pos + '"' +
            ' aria-label="Set ' + name + ' to ' + v + unit + '">' + v + '</button>';
-  }
+  });
   return out + '</div>';
+}
+
+/* How low this reading's percentage can go. While the window a reading belongs to
+   has not reset, usage is monotonic — it cannot have fallen since the last entry —
+   so the slider starts there instead of at zero and the dead half of the scale
+   disappears. Once the reset has passed the stored reading is stale and says
+   nothing about the new window, so the full 0–100 comes back. */
+function percentFloor(key){
+  if(fullRange[key]) return 0;
+  var t = state.trackers[key];
+  var st = stats(t);
+  if(!st || st.expired || !isNum(t.percent_used)) return 0;
+  return clamp(Math.round(t.percent_used), 0, 100);
+}
+
+/* the percent slider is rebuilt when the form opens, because its floor moves with
+   the data — unlike the time sliders, whose range only depends on the settings */
+function applyPercentRange(panel, key){
+  var inp = panel.querySelector("#" + key + "-percent");
+  if(!inp) return;
+  var floor = percentFloor(key);
+  var prev = parseInt(inp.value, 10);
+  inp.min = String(floor);
+  var ticks = inp.parentNode.querySelector(".ticks");
+  if(ticks) ticks.outerHTML = tickScale("percent", floor, 100, 10, "%");
+  inp.value = String(clamp(isFinite(prev) ? prev : floor, floor, 100));
+
+  var note = panel.querySelector('[data-slot="pctnote"]');
+  if(!note) return;
+  if(floor > 0){
+    note.hidden = false;
+    note.innerHTML = "Starts at <b>" + floor + "%</b> — this " + esc(META[key].noun) +
+      " hasn't reset yet, so usage can't have gone down. " +
+      '<button type="button" class="linkish" data-act="full-range">Use the full scale</button>';
+  } else {
+    note.hidden = true;
+    note.innerHTML = "";
+  }
 }
 
 function panelHTML(key){
@@ -695,7 +775,8 @@ function panelHTML(key){
           '<output id="' + key + '-' + name + '-out" for="' + key + '-' + name + '">0' + unit + '</output>' +
         '</div>' +
         '<input type="range" id="' + key + '-' + name + '" data-slider="' + name + '" min="0" max="' + max + '" step="1" value="0">' +
-        tickScale(name, max, step, unit) +
+        tickScale(name, 0, max, step, unit) +
+        (name === "percent" ? '<p class="range-note" data-slot="pctnote" hidden></p>' : '') +
       '</div>';
   };
 
@@ -753,6 +834,7 @@ function panelHTML(key){
 /* ---------------- rendering ---------------- */
 
 var expanded = { session:false, weekly:false };
+var fullRange = { session:false, weekly:false };   /* the escape hatch out of a trimmed percent scale */
 var ROW_LIMIT = 5;
 
 function render(){
@@ -973,7 +1055,8 @@ function syncForm(panel){
     var unit = name === "days" ? "d" : name === "hours" ? "h" : name === "minutes" ? "m" : "%";
     var out = panel.querySelector("#" + key + "-" + name + "-out");
     if(out) out.textContent = inp.value + unit;
-    inp.style.setProperty("--fp", String((parseInt(inp.value,10) / (parseInt(inp.max,10) || 1)) * 100));
+    var lo = parseInt(inp.min,10) || 0, hi = parseInt(inp.max,10) || 1;
+    inp.style.setProperty("--fp", String((hi > lo ? (parseInt(inp.value,10) - lo) / (hi - lo) : 1) * 100));
     var field = inp.closest(".field");
     if(field) field.querySelectorAll(".tick").forEach(function(tk){
       tk.classList.toggle("on", tk.getAttribute("data-v") === inp.value);
@@ -1020,9 +1103,12 @@ function openForm(panel){
   var seedMins = (s && s.leftNow > 0) ? s.leftNow : Math.round(t.duration_hours * 60);
   var seedPct = (s && !s.expired && isNum(t.percent_used)) ? t.percent_used : 0;
 
+  fullRange[key] = false;
+  applyPercentRange(panel, key);
+
   var setSlider = function(name, val){
     var inp = panel.querySelector("#" + key + "-" + name);
-    if(inp) inp.value = clamp(Math.round(val), 0, parseInt(inp.max,10));
+    if(inp) inp.value = clamp(Math.round(val), parseInt(inp.min,10) || 0, parseInt(inp.max,10));
   };
   setSlider("hours", Math.floor(seedMins/60));
   setSlider("minutes", seedMins % 60);
@@ -1259,8 +1345,10 @@ function loadSdk(){
 }
 
 /* ---- session ---- */
+var startPromise = null;
 function syncStart(){
-  return loadSdk().then(function(fb){
+  if(startPromise) return startPromise;
+  startPromise = loadSdk().then(function(fb){
     fb.a.onAuthStateChanged(fb.auth, function(user){
       sync.user = user || null;
       if(sync.unsub){ sync.unsub(); sync.unsub = null; }
@@ -1273,7 +1361,11 @@ function syncStart(){
       renderSync();
     });
     return fb;
+  })["catch"](function(err){
+    startPromise = null;
+    throw err;
   });
+  return startPromise;
 }
 
 function docRef(fb, user){ return fb.f.doc(fb.db, SYNC.collection, user.uid); }
@@ -1369,7 +1461,7 @@ function sendSignInLink(address){
     return;
   }
   sync.busy = true; syncMsg("Sending…"); renderSync();
-  loadSdk().then(function(fb){
+  syncStart().then(function(fb){
     return fb.a.sendSignInLinkToEmail(fb.auth, addr, {
       url: location.origin + location.pathname,
       handleCodeInApp: true
@@ -1379,6 +1471,44 @@ function sendSignInLink(address){
     sync.busy = false;
     syncMsg("Link sent to " + addr + ". Open it in this browser — the tab it opens is the one that signs in.");
     renderSync();
+  })["catch"](function(err){
+    sync.busy = false;
+    syncMsg(authError(err), true);
+    renderSync();
+  });
+}
+
+/* The home-screen app is a different storage container from Safari, so a tapped link
+   signs in over there and this copy stays signed out. Pasting the same link in here
+   spends the code in this container instead — the one place the session is wanted. */
+function signInWithPastedLink(raw){
+  var link = String(raw || "").trim();
+  if(!link){ syncMsg("Paste the whole link from the email.", true); renderSync(); return; }
+  sync.busy = true; syncMsg("Checking the link…"); renderSync();
+  syncStart().then(function(fb){
+    if(!fb.a.isSignInWithEmailLink(fb.auth, link)){
+      sync.busy = false;
+      syncMsg("That isn't a sign-in link. Copy the whole address from the email — it carries an oobCode.", true);
+      renderSync();
+      return null;
+    }
+    var field = document.getElementById("sync-email");
+    var email = ((field && field.value) || "").trim() || lsGet(EMAIL_KEY) || "";
+    if(!email) email = window.prompt("Confirm the email address the link was sent to:") || "";
+    if(!email){
+      sync.busy = false;
+      syncMsg("Sign-in cancelled — nothing was changed.", true);
+      renderSync();
+      return null;
+    }
+    return fb.a.signInWithEmailLink(fb.auth, email, link).then(function(){
+      lsDel(EMAIL_KEY);
+      sync.busy = false;
+      syncMsg("");
+      var box = document.getElementById("sync-link");
+      if(box) box.value = "";
+      toast("Signed in. Readings on this device now sync to your account.");
+    });
   })["catch"](function(err){
     sync.busy = false;
     syncMsg(authError(err), true);
@@ -1474,12 +1604,16 @@ function renderSync(){
     line.textContent = "Not signed in — readings stay in this browser.";
     form.hidden = false; live.hidden = true;
     chip.hidden = true;
+    var paste = document.getElementById("sync-paste");
+    if(paste) paste.hidden = !lsGet(EMAIL_KEY);
   }
   msg.hidden = !sync.msg;
   msg.textContent = sync.msg;
   msg.className = "hint" + (sync.msgBad ? " bad" : "");
   var send = document.getElementById("btn-sync-send");
   if(send) send.disabled = !!sync.busy;
+  var pasteBtn = document.getElementById("btn-sync-paste");
+  if(pasteBtn) pasteBtn.disabled = !!sync.busy;
 }
 
 /* ---- boot ---- */
@@ -1533,6 +1667,11 @@ grid.addEventListener("click", function(ev){
   var act = btn.getAttribute("data-act");
   if(act === "open-form") openForm(panel);
   else if(act === "cancel") closeForm(panel);
+  else if(act === "full-range"){
+    fullRange[panel.getAttribute("data-key")] = true;
+    applyPercentRange(panel, panel.getAttribute("data-key"));
+    syncForm(panel);
+  }
   else if(act === "more"){
     var k = panel.getAttribute("data-key");
     expanded[k] = !expanded[k];
@@ -1580,7 +1719,7 @@ document.getElementById("btn-settings").addEventListener("click", function(){
 });
 document.getElementById("btn-close-settings").addEventListener("click", function(){ dlg.close ? dlg.close() : dlg.removeAttribute("open"); });
 dlg.addEventListener("change", function(ev){
-  if(ev.target.id === "file-input" || ev.target.id === "sync-email") return;
+  if(ev.target.id === "file-input" || ev.target.id === "sync-email" || ev.target.id === "sync-link") return;
   var sd = parseFloat(document.getElementById("s-dur").value);
   var wd = parseFloat(document.getElementById("w-dur").value);
   if(isNum(sd) && sd > 0) state.trackers.session.duration_hours = sd;
@@ -1610,6 +1749,9 @@ document.getElementById("btn-wipe").addEventListener("click", function(){
 var syncEmail = document.getElementById("sync-email");
 document.getElementById("btn-sync-send").addEventListener("click", function(){ sendSignInLink(syncEmail.value); });
 syncEmail.addEventListener("keydown", function(ev){ if(ev.key === "Enter"){ ev.preventDefault(); sendSignInLink(syncEmail.value); } });
+var syncLink = document.getElementById("sync-link");
+document.getElementById("btn-sync-paste").addEventListener("click", function(){ signInWithPastedLink(syncLink.value); });
+syncLink.addEventListener("keydown", function(ev){ if(ev.key === "Enter"){ ev.preventDefault(); signInWithPastedLink(syncLink.value); } });
 document.getElementById("btn-sync-now").addEventListener("click", syncNow);
 document.getElementById("btn-sync-out").addEventListener("click", syncSignOut);
 
