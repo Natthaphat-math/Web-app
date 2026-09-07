@@ -198,6 +198,18 @@ button{font:inherit;cursor:pointer}
 .tick:hover{color:var(--ink)}
 .tick.on{color:var(--accent);font-weight:600;background:var(--accent-soft)}
 .tick.on::before{background:var(--accent)}
+.chunks{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px}
+.chunk{
+  flex:1 1 auto;min-width:74px;border:1px solid var(--hair);background:var(--surface);
+  color:var(--ink-2);border-radius:9px;padding:9px 8px;font-family:var(--mono);
+  font-size:12.5px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.01em;
+  transition:border-color .15s ease,background .15s ease,color .15s ease;
+}
+.chunk:hover{border-color:var(--ink-3)}
+.chunk.on{
+  background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 45%,transparent);
+  color:var(--accent);font-weight:600;
+}
 .range-note{margin:-3px 0 0;font-size:11.5px;line-height:1.45;color:var(--ink-3)}
 .range-note b{font-family:var(--mono);font-weight:600;color:var(--ink-2)}
 .linkish{
@@ -705,16 +717,17 @@ function sliderCfg(t){
 
 /* ---------------- panel markup ---------------- */
 
-function tickScale(name, min, max, step, unit){
+function tickScale(name, min, max, step, unit, banded){
   var span = max - min, marks = [], v;
-  if(min > 0){
-    /* a trimmed scale: the floor and the ceiling both get a mark, and the round
-       numbers in between only when they don't crowd either end */
+  if(banded){
+    /* a band: both ends get a mark, and the round numbers between them only when
+       they don't crowd either end. A band can start at 0 and still need this. */
     marks.push(min);
     for(v = Math.ceil((min + step*0.6) / step) * step; v < max; v += step) marks.push(v);
     if(marks.length > 1 && max - marks[marks.length-1] < step*0.6) marks.pop();
     if(marks[marks.length-1] !== max) marks.push(max);
   } else {
+    /* the plain scales — hours, minutes — exactly as they have always been */
     for(v = 0; v <= max; v += step) marks.push(v);
   }
 
@@ -740,17 +753,66 @@ function percentFloor(key){
   return clamp(Math.round(t.percent_used), 0, 100);
 }
 
+/* A whole 0–100 slider is a long drag for a number that moves a few points at a time,
+   so the reachable range is cut into buttons and the slider only spans the chosen one.
+
+   The two cards move differently, so they cut differently. A session burns fast, so it
+   takes 20-point bands on the fixed 20-grid (…41–60, 61–80, 81–100) with the first band
+   clipped to the floor: at 65% that reads 65–80 and 81–100. A week barely moves, so it
+   takes the next ten points, the ten after that, and one long tail: at 68% that reads
+   68–77, 78–87 and 88–100. Either way the band holding the current value is selected. */
+function percentChunks(key){
+  var floor = percentFloor(key), out = [];
+  if(key === "weekly"){
+    [[floor, floor+9], [floor+10, floor+19], [floor+20, 100]].forEach(function(b){
+      if(b[0] <= 100 && Math.min(b[1],100) >= b[0]) out.push({ min:b[0], max:Math.min(b[1],100) });
+    });
+  } else {
+    var start = floor, end = floor <= 0 ? 20 : Math.ceil(floor/20)*20;
+    while(start <= 100){
+      out.push({ min:start, max:Math.min(end,100) });
+      start = end + 1;
+      end += 20;
+    }
+  }
+  return out.length ? out : [{ min:floor, max:100 }];
+}
+
+/* enough marks to aim by, without crowding a narrow band */
+function tickStepFor(span){ return span <= 10 ? 2 : span <= 30 ? 5 : 10; }
+
+function chunkIndexFor(key, value){
+  var chunks = percentChunks(key), i;
+  for(i = 0; i < chunks.length; i++) if(value >= chunks[i].min && value <= chunks[i].max) return i;
+  return value > chunks[chunks.length-1].max ? chunks.length - 1 : 0;
+}
+
 /* the percent slider is rebuilt when the form opens, because its floor moves with
    the data — unlike the time sliders, whose range only depends on the settings */
 function applyPercentRange(panel, key){
   var inp = panel.querySelector("#" + key + "-percent");
   if(!inp) return;
   var floor = percentFloor(key);
+  var chunks = percentChunks(key);
+  var idx = chunkIdx[key] = clamp(chunkIdx[key] || 0, 0, chunks.length - 1);
+  var band = chunks[idx];
   var prev = parseInt(inp.value, 10);
-  inp.min = String(floor);
+
+  var row = panel.querySelector('[data-slot="chunks"]');
+  if(row){
+    row.hidden = chunks.length < 2;
+    row.innerHTML = chunks.length < 2 ? "" : chunks.map(function(c, i){
+      return '<button type="button" class="chunk' + (i === idx ? " on" : "") + '" data-act="chunk" data-i="' + i + '"' +
+             ' aria-pressed="' + (i === idx) + '" aria-label="Log between ' + c.min + ' and ' + c.max + ' percent">' +
+             c.min + '–' + c.max + '</button>';
+    }).join("");
+  }
+
+  inp.min = String(band.min);
+  inp.max = String(band.max);
   var ticks = inp.parentNode.querySelector(".ticks");
-  if(ticks) ticks.outerHTML = tickScale("percent", floor, 100, 10, "%");
-  inp.value = String(clamp(isFinite(prev) ? prev : floor, floor, 100));
+  if(ticks) ticks.outerHTML = tickScale("percent", band.min, band.max, tickStepFor(band.max - band.min), "%", true);
+  inp.value = String(clamp(isFinite(prev) ? prev : band.min, band.min, band.max));
 
   var note = panel.querySelector('[data-slot="pctnote"]');
   if(!note) return;
@@ -774,20 +836,27 @@ function panelHTML(key){
           '<label for="' + key + '-' + name + '">' + label + '</label>' +
           '<output id="' + key + '-' + name + '-out" for="' + key + '-' + name + '">0' + unit + '</output>' +
         '</div>' +
+        (name === "percent" ? '<div class="chunks" data-slot="chunks" hidden></div>' : '') +
         '<input type="range" id="' + key + '-' + name + '" data-slider="' + name + '" min="0" max="' + max + '" step="1" value="0">' +
-        tickScale(name, 0, max, step, unit) +
+        tickScale(name, 0, max, step, unit, false) +
         (name === "percent" ? '<p class="range-note" data-slot="pctnote" hidden></p>' : '') +
       '</div>';
   };
 
-  /* the weekly reset comes from the slot in Settings, so that card only logs a percentage */
+  /* the weekly reset comes from the slot in Settings, so that card only logs a percentage.
+     The session's do get sliders, but they stay folded away while the reset they were
+     computed from is still in the future — the countdown is already right, so the common
+     log is one drag on the percentage and nothing else. */
   var timeFields = key === "weekly"
     ? '<p class="form-hint" data-slot="slothint"></p>'
-    : f("hours", "Hours left", cfg.hours, "h", 1) + f("minutes", "Minutes left", 59, "m", 10);
+    : '<p class="form-hint" data-slot="timesummary" hidden></p>' +
+      '<div data-slot="timefields">' +
+        f("hours", "Hours left", cfg.hours, "h", 1) + f("minutes", "Minutes left", 59, "m", 10) +
+      '</div>';
 
   var formIntro = key === "weekly"
     ? "Just the percentage. Time until reset comes from your weekly slot, and the moment you tap Save anchors the maths."
-    : "Read the numbers off Claude, then correct the sliders. The sliders open at what the countdown should read right now.";
+    : "Read the percentage off Claude, pick the band it lands in, and nudge. The countdown comes from the reset you already logged — unfold it only if that reset moved.";
 
   return '' +
   '<section class="panel" data-key="' + key + '">' +
@@ -835,6 +904,8 @@ function panelHTML(key){
 
 var expanded = { session:false, weekly:false };
 var fullRange = { session:false, weekly:false };   /* the escape hatch out of a trimmed percent scale */
+var chunkIdx  = { session:0, weekly:0 };           /* which percent band the slider spans */
+var timeOpen  = { session:true, weekly:true };     /* are the session's time sliders unfolded */
 var ROW_LIMIT = 5;
 
 function render(){
@@ -1077,6 +1148,13 @@ function syncForm(panel){
       "</b> slot, <b>" + esc(fmtDuration(mins)) + "</b> away. Change it in Settings.";
   }
 
+  var tsum = panel.querySelector('[data-slot="timesummary"]');
+  if(tsum && !tsum.hidden){
+    tsum.innerHTML = "Time left <b>" + esc(fmtDuration(mins)) + "</b>, counting down to the <b>" +
+      esc(fmtClock(reset)) + "</b> reset you already logged. " +
+      '<button type="button" class="linkish" data-act="edit-time">Change it</button>';
+  }
+
   var preview = panel.querySelector('[data-slot="preview"]');
   var line1 = "Save now → resets <b>" + esc(fmtWhen(reset)) + "</b> (" + esc(fmtDuration(mins)) +
               (key === "weekly" ? " away)" : " from the moment you tap Save)");
@@ -1089,6 +1167,16 @@ function syncForm(panel){
       (state.settings.session_reset_grid || 10) + "-minute mark."
     : "";
   preview.innerHTML = line1 + "<br>" + line2 + line3;
+}
+
+/* the time sliders exist either way; folding just hides them, so whatever the
+   countdown seeded stays in the values the form reads back on save */
+function applyTimeFold(panel, key){
+  var fields = panel.querySelector('[data-slot="timefields"]');
+  var summary = panel.querySelector('[data-slot="timesummary"]');
+  if(!fields || !summary) return;
+  fields.hidden = !timeOpen[key];
+  summary.hidden = !!timeOpen[key];
 }
 
 function openForm(panel){
@@ -1104,7 +1192,12 @@ function openForm(panel){
   var seedPct = (s && !s.expired && isNum(t.percent_used)) ? t.percent_used : 0;
 
   fullRange[key] = false;
+  chunkIdx[key] = 0;
+  /* the reset this reading counts down to is already known while it is in the future,
+     so the time sliders start folded away; a stale window needs them back */
+  timeOpen[key] = !(key === "session" && s && !s.expired);
   applyPercentRange(panel, key);
+  applyTimeFold(panel, key);
 
   var setSlider = function(name, val){
     var inp = panel.querySelector("#" + key + "-" + name);
@@ -1668,8 +1761,26 @@ grid.addEventListener("click", function(ev){
   if(act === "open-form") openForm(panel);
   else if(act === "cancel") closeForm(panel);
   else if(act === "full-range"){
-    fullRange[panel.getAttribute("data-key")] = true;
-    applyPercentRange(panel, panel.getAttribute("data-key"));
+    var fk = panel.getAttribute("data-key");
+    var fi = panel.querySelector("#" + fk + "-percent");
+    var held = fi ? parseInt(fi.value, 10) : 0;
+    fullRange[fk] = true;
+    chunkIdx[fk] = chunkIndexFor(fk, held);   /* widening the scale shouldn't move the reading */
+    applyPercentRange(panel, fk);
+    syncForm(panel);
+  }
+  else if(act === "chunk"){
+    var ck = panel.getAttribute("data-key");
+    chunkIdx[ck] = parseInt(btn.getAttribute("data-i"), 10) || 0;
+    var pi = panel.querySelector("#" + ck + "-percent");
+    if(pi) pi.value = String(percentChunks(ck)[chunkIdx[ck]].min);   /* land at the band's floor */
+    applyPercentRange(panel, ck);
+    syncForm(panel);
+  }
+  else if(act === "edit-time"){
+    var tk = panel.getAttribute("data-key");
+    timeOpen[tk] = true;
+    applyTimeFold(panel, tk);
     syncForm(panel);
   }
   else if(act === "more"){
