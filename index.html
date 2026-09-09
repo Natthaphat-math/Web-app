@@ -1,435 +1,947 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="th">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>My Tools</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>คลังสื่อคณิตศาสตร์ | ครูเอฟ</title>
+<meta name="description" content="คลังสื่อการสอนคณิตศาสตร์แบบอินเทอร์แอกทีฟ โดยครูเอฟ (Natthaphat Thongsom) รวมเกมและบทเรียนคณิตศาสตร์ที่เปิดใช้งานได้ทันที">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📐</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Pridi:wght@400;500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* ==========================================================================
-   Design tokens — shared with the apps in this collection.
-   ========================================================================== */
-:root{
-  --bg:#EFF1F0; --surface:#FBFBFA; --sunk:#E5E9E8; --hair:#D3DAD8; --hair-soft:#E2E7E6;
-  --ink:#101615; --ink-2:#4E5A58; --ink-3:#798583;
-  --accent:#0B6B5D; --accent-ink:#FFFFFF; --accent-soft:#DCEBE7;
-  --cool:#3E7FA6; --cool-soft:#DCE9F1;
-  --warm:#B07A0B; --warm-soft:#F5E8CC;
-  --hot:#B03826; --hot-soft:#F6DDD8;
-  --track:#DDE3E1;
-  --shadow:0 1px 2px rgba(16,22,21,.05),0 6px 18px -12px rgba(16,22,21,.28);
-  --shadow-lift:0 2px 4px rgba(16,22,21,.06),0 18px 38px -20px rgba(16,22,21,.42);
-  --sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif;
-  --display:'Archivo','Helvetica Neue',Arial,sans-serif;
-  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
-  color-scheme:light;
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --bg:#0D1211; --surface:#161D1C; --sunk:#1D2625; --hair:#28322F; --hair-soft:#212B29;
-    --ink:#E7EDEB; --ink-2:#9AA8A5; --ink-3:#75827F;
-    --accent:#31BFA6; --accent-ink:#06201C; --accent-soft:#123029;
-    --cool:#74B4D8; --cool-soft:#132734;
-    --warm:#E3A93C; --warm-soft:#33280F;
-    --hot:#E8705C; --hot-soft:#361B16;
-    --track:#242E2C;
-    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px -14px rgba(0,0,0,.8);
-    --shadow-lift:0 2px 6px rgba(0,0,0,.45),0 22px 44px -22px rgba(0,0,0,.95);
-    color-scheme:dark;
+  :root{
+    --paper:#FAFAF6;
+    --grid-line: rgba(27,58,107,0.08);
+    --board-green:#1E3B32;
+    --board-green-dark:#132922;
+    --chalk-yellow:#F0C33B;
+    --chalk-white:#F7F5EE;
+    --ink-blue:#1B3A6B;
+    --ink-blue-soft: rgba(27,58,107,0.62);
+    --pencil-red:#D9503F;
+    --card-bg:#FFFFFE;
+    --card-border:#E4DFD2;
+    --shadow: 0 14px 34px rgba(19,41,34,0.10);
+    --shadow-hover: 0 20px 44px rgba(19,41,34,0.16);
+    --lvl-ps:#E2793D; --lvl-ps-soft:#FBEADC;
+    --lvl-jh:#1E8C8C; --lvl-jh-soft:#DFF3F1;
+    --lvl-sh:#7A52C9; --lvl-sh-soft:#ECE4F8;
+    --lvl-uni:#B23A5A; --lvl-uni-soft:#F8E3E9;
+    --lvl-other:#6B6F76; --lvl-other-soft:#E8E7E3;
+    --font-display:'Pridi', 'Noto Serif Thai', serif;
+    --font-body:'IBM Plex Sans Thai','Noto Sans Thai', sans-serif;
+    --font-mono:'IBM Plex Mono', ui-monospace, monospace;
   }
-}
-:root[data-theme="dark"]{
-  --bg:#0D1211; --surface:#161D1C; --sunk:#1D2625; --hair:#28322F; --hair-soft:#212B29;
-  --ink:#E7EDEB; --ink-2:#9AA8A5; --ink-3:#75827F;
-  --accent:#31BFA6; --accent-ink:#06201C; --accent-soft:#123029;
-  --cool:#74B4D8; --cool-soft:#132734;
-  --warm:#E3A93C; --warm-soft:#33280F;
-  --hot:#E8705C; --hot-soft:#361B16;
-  --track:#242E2C;
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px -14px rgba(0,0,0,.8);
-  --shadow-lift:0 2px 6px rgba(0,0,0,.45),0 22px 44px -22px rgba(0,0,0,.95);
-  color-scheme:dark;
-}
 
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-html,body{margin:0}
-body{
-  background:var(--bg); color:var(--ink); font-family:var(--sans);
-  font-size:15px; line-height:1.5;
-  padding:18px 14px calc(56px + env(safe-area-inset-bottom));
-  -webkit-text-size-adjust:100%;
-}
-.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
-button{font:inherit;cursor:pointer}
-:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px;border-radius:6px}
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; overscroll-behavior-y:none; }
+  body{
+    margin:0;
+    overscroll-behavior-y:none;
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size:28px 28px;
+    font-family:var(--font-body);
+    color:#233;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{ font-family:var(--font-display); margin:0; }
+  a{ color:inherit; }
+  :focus-visible{ outline:3px solid var(--ink-blue); outline-offset:3px; border-radius:4px; }
 
-/* ---- masthead ---- */
-.masthead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 16px;justify-content:space-between}
-.eyebrow{
-  margin:0;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--ink-3);font-family:var(--mono);
-}
-.masthead h1{
-  font-family:var(--display);font-weight:700;font-size:23px;letter-spacing:-.015em;
-  margin:3px 0 0;text-wrap:balance;
-}
-.masthead .sub{margin:2px 0 0;color:var(--ink-2);font-size:12.5px;max-width:58ch}
-.tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .wrap{ max-width:1080px; margin:0 auto; padding:0 24px; }
 
-/* ---- buttons + chips ---- */
-.btn{
-  border:1px solid var(--hair);background:var(--surface);color:var(--ink);
-  border-radius:9px;padding:9px 13px;font-size:13.5px;font-weight:500;
-  transition:border-color .15s ease,background .15s ease,transform .06s ease;
-}
-.btn:hover{border-color:var(--ink-3)}
-.btn:active{transform:translateY(1px)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
-.chip{
-  font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.01em;
-  padding:5px 9px;border-radius:999px;white-space:nowrap;
-  background:var(--sunk);color:var(--ink-2);border:1px solid var(--hair-soft);
-}
-.chip.small{font-size:10.5px;padding:3px 7px}
-.chip.tag{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    background:
+      radial-gradient(ellipse at 15% 15%, rgba(255,255,255,0.05), transparent 45%),
+      linear-gradient(155deg, var(--board-green) 0%, var(--board-green-dark) 100%);
+    padding:76px 0 96px;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size:7px 7px;
+    pointer-events:none;
+  }
+  .hero-inner{
+    position:relative; z-index:2;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:40px; flex-wrap:wrap;
+  }
+  .hero-text{ flex:1 1 380px; max-width:560px; }
+  .eyebrow{
+    display:inline-block;
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    letter-spacing:.14em;
+    color:var(--chalk-yellow);
+    background:rgba(240,195,59,0.12);
+    border:1px solid rgba(240,195,59,0.35);
+    padding:5px 11px;
+    border-radius:100px;
+    margin-bottom:20px;
+  }
+  .hero-text h1{
+    color:var(--chalk-white);
+    font-size:clamp(34px,5.2vw,52px);
+    font-weight:600;
+    line-height:1.18;
+  }
+  .underline-svg{ display:block; margin:6px 0 18px; width:220px; max-width:70%; }
+  .hero-text p{
+    color:rgba(247,245,238,0.86);
+    font-size:16.5px;
+    line-height:1.75;
+    max-width:46ch;
+    margin:0 0 26px;
+  }
+  .stat-chip{
+    display:inline-flex; align-items:center; gap:9px;
+    font-family:var(--font-mono);
+    font-size:13px;
+    color:var(--board-green-dark);
+    background:var(--chalk-white);
+    padding:8px 14px;
+    border-radius:8px;
+    font-weight:500;
+  }
+  .stat-chip b{ color:var(--pencil-red); font-size:15px; }
 
-/* ---- filter bar ---- */
-.filterbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-.search{position:relative;flex:1 1 220px;max-width:340px}
-.search input{
-  font:inherit;font-size:13.5px;width:100%;padding:9px 12px 9px 32px;border-radius:9px;
-  border:1px solid var(--hair);background:var(--surface);color:var(--ink);
-}
-.search input::placeholder{color:var(--ink-3)}
-.search svg{
-  position:absolute;left:10px;top:50%;transform:translateY(-50%);
-  width:14px;height:14px;stroke:var(--ink-3);fill:none;stroke-width:1.8;pointer-events:none;
-}
-.count{font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
+  .doodle{ flex:0 1 340px; width:100%; max-width:340px; }
 
-/* ---- grid ---- */
-.grid{
-  display:grid;gap:18px;align-items:start;
-  grid-template-columns:repeat(auto-fill,minmax(min(100%,310px),1fr));
-}
+  .venn-box{ flex:0 1 300px; width:100%; max-width:300px; }
+  .venn-box svg{ display:block; width:100%; height:auto; }
+  .venn-box circle{ transition: fill-opacity .35s ease, stroke-opacity .35s ease; }
+  .venn-box circle.venn-active{ fill-opacity:0.88; stroke-opacity:1; }
+  .venn-box circle.venn-dim{ fill-opacity:0.05; stroke-opacity:0.28; }
+  .venn-box text{ transition: opacity .3s ease; }
 
-/* ---- card ---- */
-.card{
-  position:relative;display:flex;flex-direction:column;
-  background:var(--surface);border:1px solid var(--hair);border-radius:15px;
-  box-shadow:var(--shadow);overflow:hidden;
-  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
-}
-.card:hover{border-color:var(--ink-3);box-shadow:var(--shadow-lift);transform:translateY(-2px)}
-.card:has(.link:focus-visible){outline:2.5px solid var(--accent);outline-offset:2px}
+  .torn-edge{
+    position:absolute; left:0; right:0; bottom:-2px; height:34px; z-index:3;
+    background:var(--paper);
+    clip-path: polygon(0% 100%,0% 45%,3% 78%,6% 22%,9% 62%,12% 12%,15% 58%,18% 8%,21% 68%,24% 28%,27% 52%,30% 5%,33% 62%,36% 18%,39% 72%,42% 15%,45% 58%,48% 10%,51% 65%,54% 30%,57% 52%,60% 8%,63% 68%,66% 20%,69% 55%,72% 12%,75% 62%,78% 18%,81% 70%,84% 25%,87% 55%,90% 10%,93% 65%,96% 20%,100% 45%,100% 100%);
+  }
 
-/* ---- preview stage ---- */
-.stage{
-  position:relative;aspect-ratio:16/10;overflow:hidden;
-  background:var(--sunk);border-bottom:1px solid var(--hair-soft);
-}
-.shot{
-  position:absolute;top:0;left:0;border:0;display:block;
-  width:calc(100% / var(--zoom));
-  height:calc(100% / var(--zoom));
-  transform:scale(var(--zoom));
-  transform-origin:0 0;
-  pointer-events:none;               /* never interactive at a glance */
-  opacity:0;transition:opacity .35s ease;
-  background:var(--surface);
-}
-.card[data-preview="ready"] .shot{opacity:1}
-/* veil sits over the frame so nothing inside can be hovered or hit */
-.veil{
-  position:absolute;inset:0;z-index:2;
-  background:linear-gradient(180deg,transparent 60%,color-mix(in srgb,var(--ink) 5%,transparent));
-  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 4%,transparent);
-}
-/* skeleton while the frame boots */
-.card[data-preview="idle"] .stage::after,
-.card[data-preview="loading"] .stage::after{
-  content:"";position:absolute;inset:0;z-index:1;background:var(--sunk);
-}
-.card[data-preview="loading"] .stage::after{
-  background:linear-gradient(100deg,var(--sunk) 30%,var(--hair-soft) 50%,var(--sunk) 70%);
-  background-size:300% 100%;animation:sweep 1.4s ease-in-out infinite;
-}
-@keyframes sweep{from{background-position:120% 0}to{background-position:-40% 0}}
+  /* ---------- MAIN ---------- */
+  main{ padding:56px 0 40px; }
+  .section-head{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:16px 24px; flex-wrap:wrap;
+    margin-bottom:28px;
+    padding-bottom:14px;
+    border-bottom:2px solid var(--card-border);
+  }
+  .section-head h2{
+    font-size:24px; font-weight:600; color:var(--ink-blue);
+  }
+  .section-head .count{
+    font-family:var(--font-mono);
+    font-size:13px;
+    color:var(--ink-blue-soft);
+    white-space:nowrap;
+  }
+  .controls{
+    display:flex; align-items:center; gap:16px;
+    flex-wrap:wrap;
+  }
+  .filter-group{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .filter-label{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    letter-spacing:.06em;
+    color:#9a9488;
+    margin-right:2px;
+  }
+  .filter-btn, .level-btn{
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    padding:6px 14px;
+    border-radius:100px;
+    border:1px solid var(--card-border);
+    background:#fff;
+    color:var(--ink-blue-soft);
+    cursor:pointer;
+    transition: background .2s ease, color .2s ease, border-color .2s ease;
+  }
+  .filter-btn:hover{ border-color:var(--ink-blue); color:var(--ink-blue); }
+  .filter-btn.active{
+    background:var(--ink-blue);
+    border-color:var(--ink-blue);
+    color:#fff;
+  }
 
-/* ---- fallback ---- */
-.fallback{
-  position:absolute;inset:0;z-index:1;display:none;
-  flex-direction:column;align-items:center;justify-content:center;gap:7px;
-  background:var(--sunk);color:var(--ink-3);text-align:center;padding:16px;
-}
-.card[data-preview="failed"] .fallback{display:flex}
-.fallback svg{width:26px;height:26px;stroke:var(--ink-3);fill:none;stroke-width:1.5;opacity:.8}
-.fallback b{font-family:var(--display);font-size:13px;font-weight:600;color:var(--ink-2);letter-spacing:-.005em}
-.fallback span{font-family:var(--mono);font-size:10.5px;line-height:1.5;word-break:break-all;max-width:26ch}
+  .level-filter-row{
+    flex-basis:100%;
+    display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap;
+    margin-top:6px;
+  }
+  .level-btn:hover{ border-color:var(--ink-blue); color:var(--ink-blue); }
+  .level-btn.active{ background:var(--ink-blue); border-color:var(--ink-blue); color:#fff; }
+  .level-btn.lvl-ps:hover{ border-color:var(--lvl-ps); color:var(--lvl-ps); }
+  .level-btn.lvl-jh:hover{ border-color:var(--lvl-jh); color:var(--lvl-jh); }
+  .level-btn.lvl-sh:hover{ border-color:var(--lvl-sh); color:var(--lvl-sh); }
+  .level-btn.lvl-uni:hover{ border-color:var(--lvl-uni); color:var(--lvl-uni); }
+  .level-btn.lvl-other:hover{ border-color:var(--lvl-other); color:var(--lvl-other); }
+  .level-btn.lvl-ps.active{ background:var(--lvl-ps); border-color:var(--lvl-ps); color:#fff; }
+  .level-btn.lvl-jh.active{ background:var(--lvl-jh); border-color:var(--lvl-jh); color:#fff; }
+  .level-btn.lvl-sh.active{ background:var(--lvl-sh); border-color:var(--lvl-sh); color:#fff; }
+  .level-btn.lvl-uni.active{ background:var(--lvl-uni); border-color:var(--lvl-uni); color:#fff; }
+  .level-btn.lvl-other.active{ background:var(--lvl-other); border-color:var(--lvl-other); color:#fff; }
 
-/* ---- card body ---- */
-.body{display:flex;flex-direction:column;gap:8px;padding:14px 15px 15px;flex:1}
-.card-head{display:flex;align-items:flex-start;gap:9px;justify-content:space-between}
-.card-head h2{
-  font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:-.01em;margin:0;
-  line-height:1.25;text-wrap:balance;
-}
-.link{color:inherit;text-decoration:none}
-.link::after{content:"";position:absolute;inset:0;z-index:4}  /* whole card is the hit area */
-.desc{margin:0;color:var(--ink-2);font-size:12.5px;line-height:1.5;flex:1}
-.card-foot{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-top:4px}
-.open{
-  display:inline-flex;align-items:center;gap:6px;
-  background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);
-  border-radius:9px;padding:8px 12px;font-size:13px;font-weight:600;
-  transition:filter .15s ease;
-}
-.card:hover .open{filter:brightness(1.08)}
-.open .arw{transition:transform .18s ease}
-.card:hover .open .arw{transform:translateX(2px)}
-.file{
-  font-family:var(--mono);font-size:10.5px;color:var(--ink-3);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-}
+  .search-box{
+    position:relative;
+    display:flex;
+    align-items:center;
+    flex:0 1 210px;
+    min-width:160px;
+  }
+  .search-icon{
+    position:absolute; left:13px;
+    width:15px; height:15px;
+    color:#9a9488;
+    pointer-events:none;
+  }
+  .search-box input[type="search"]{
+    width:100%;
+    font-family:var(--font-body);
+    font-size:13px;
+    padding:7px 30px 7px 34px;
+    border-radius:100px;
+    border:1px solid var(--card-border);
+    background:#fff;
+    color:#233;
+    outline:none;
+    transition:border-color .2s ease;
+  }
+  .search-box input[type="search"]::placeholder{ color:#b2ab9c; }
+  .search-box input[type="search"]:focus{ border-color:var(--ink-blue); }
+  .search-box input[type="search"]::-webkit-search-cancel-button{ display:none; }
+  .search-clear{
+    position:absolute; right:7px;
+    width:18px; height:18px;
+    border:none; background:transparent;
+    color:#9a9488; font-size:16px; line-height:1;
+    cursor:pointer; padding:0;
+    border-radius:50%;
+  }
+  .search-clear:not([hidden]){ display:flex; align-items:center; justify-content:center; }
+  .search-clear:hover{ color:var(--ink-blue); background:rgba(27,58,107,0.08); }
 
-/* ---- empty state ---- */
-.empty{
-  border:1px dashed var(--hair);border-radius:11px;padding:26px 16px;color:var(--ink-2);
-  font-size:13px;text-align:center;background:var(--sunk);
-}
-.foot{color:var(--ink-3);font-size:11.5px;text-align:center;line-height:1.6}
-.foot code{font-family:var(--mono);font-size:11px}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  .empty-state{
+    font-family:var(--font-mono);
+    font-size:13.5px;
+    color:#9a9488;
+    text-align:center;
+    padding:44px 20px;
+    border:2px dashed var(--card-border);
+    border-radius:14px;
+    margin-top:26px;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(270px,1fr));
+    gap:26px;
+  }
+
+  .card{
+    position:relative;
+    background:var(--card-bg);
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    padding:28px 26px 24px;
+    box-shadow:var(--shadow);
+    text-decoration:none;
+    display:block;
+    color:inherit;
+    opacity:0; transform:translateY(16px);
+    transition:opacity .5s ease, transform .5s ease, box-shadow .25s ease, border-color .25s ease;
+  }
+  .card.in-view{ opacity:1; transform:translateY(0); }
+  .card:hover, .card:focus-visible{
+    box-shadow:var(--shadow-hover);
+    border-color:var(--ink-blue);
+    transform:translateY(-4px);
+  }
+  .hole{
+    position:absolute; top:14px; left:20px;
+    width:11px; height:11px; border-radius:50%;
+    background:var(--paper);
+    box-shadow: inset 0 1px 3px rgba(19,41,34,0.35), 24px 0 0 var(--paper), 24px 0 0 2px transparent;
+  }
+  .hole::after{
+    content:""; position:absolute; top:0; left:24px;
+    width:11px; height:11px; border-radius:50%;
+    background:var(--paper);
+    box-shadow: inset 0 1px 3px rgba(19,41,34,0.35);
+  }
+  .tag-row{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    margin:20px 0 14px;
+  }
+  .tag{
+    display:inline-block;
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    letter-spacing:.06em;
+    color:var(--ink-blue);
+    background:rgba(27,58,107,0.07);
+    border-radius:100px;
+    padding:4px 11px;
+  }
+  .level-tag{
+    display:inline-block;
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    letter-spacing:.06em;
+    font-weight:500;
+    border-radius:100px;
+    padding:4px 11px;
+  }
+  .level-tag.lvl-ps{ color:var(--lvl-ps); background:var(--lvl-ps-soft); }
+  .level-tag.lvl-jh{ color:var(--lvl-jh); background:var(--lvl-jh-soft); }
+  .level-tag.lvl-sh{ color:var(--lvl-sh); background:var(--lvl-sh-soft); }
+  .level-tag.lvl-uni{ color:var(--lvl-uni); background:var(--lvl-uni-soft); }
+  .level-tag.lvl-other{ color:var(--lvl-other); background:var(--lvl-other-soft); }
+
+  /* live scaled-down iframe preview: iframe renders at 4x the box size,
+     then is scaled to 25% so it always fills the box responsively without JS */
+  .card-preview{
+    position:relative;
+    width:100%;
+    height:150px;
+    overflow:hidden;
+    border-radius:10px;
+    background:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size:14px 14px;
+    background-color:#F1EFE6;
+    border:1px solid var(--card-border);
+  }
+  .card-preview iframe{
+    position:absolute; top:0; left:0;
+    width:400%; height:400%;
+    transform:scale(0.25);
+    transform-origin:top left;
+    border:0;
+    background:#fff;
+    pointer-events:none;
+    touch-action:none;
+    opacity:0;
+    transition:opacity .5s ease;
+  }
+  .card-preview iframe.loaded{ opacity:1; }
+  /* iOS Safari can let touch drags reach into an iframe's own scrollable
+     content even with pointer-events:none on the iframe itself. This
+     transparent shield sits on top and catches the touch first, so a drag
+     over a preview always scrolls the page instead of the embedded page. */
+  .preview-shield{
+    position:absolute; inset:0;
+  }
+  .preview-badge{
+    position:absolute; right:8px; bottom:8px;
+    font-family:var(--font-mono);
+    font-size:10px;
+    letter-spacing:.05em;
+    color:var(--chalk-white);
+    background:rgba(19,41,34,0.72);
+    padding:3px 9px;
+    border-radius:100px;
+    pointer-events:none;
+  }
+  .card-preview + .tag-row{ margin-top:16px; }
+
+  .card h3{
+    font-size:21px; font-weight:600; color:#1a2b2a;
+    margin-bottom:10px; line-height:1.35;
+  }
+  .card p{
+    font-size:14.5px; line-height:1.7; color:#4a5555;
+    margin:0 0 20px;
+  }
+  .file-caption{
+    font-family:var(--font-mono);
+    font-size:11.5px; color:#9a9488;
+    margin-bottom:16px; word-break:break-all;
+  }
+  .cta{
+    display:inline-flex; align-items:center; gap:7px;
+    font-weight:600; font-size:14.5px; color:var(--ink-blue);
+  }
+  .cta svg{ transition:transform .25s ease; width:16px; height:16px; }
+  .card:hover .cta svg, .card:focus-visible .cta svg{ transform:translateX(4px); }
+
+  .card.placeholder{
+    border:2px dashed var(--card-border);
+    box-shadow:none;
+    display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
+    min-height:100%;
+    color:#9a9488;
+  }
+  .card.placeholder .plus{
+    width:34px; height:34px; border-radius:50%;
+    border:2px dashed #c9c2b2;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono); font-size:18px; margin-bottom:16px; color:#b7ae9b;
+  }
+  .card.placeholder h3{ color:#8b8474; font-size:18px; }
+  .card.placeholder p{ color:#a29a89; margin:0; }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    margin-top:40px;
+    border-top:2px solid var(--card-border);
+    padding:30px 0 44px;
+  }
+  .footer-row{
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:10px;
+  }
+  .credit{ font-size:14.5px; color:#3a4442; }
+  .credit b{ color:var(--ink-blue); font-weight:600; }
+  .footer-meta{ font-family:var(--font-mono); font-size:12px; color:#9a9488; }
+
+  @media (max-width:640px){
+    .hero{ padding:56px 0 84px; }
+    .hero-inner{ text-align:left; }
+    .doodle{ display:none; }
+    .venn-box{ display:none; }
+    main{ padding:44px 0 24px; }
+    .search-box{ flex:1 1 100%; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    .card{ transition:none; opacity:1; transform:none; }
+    .card:hover, .card:focus-visible{ transform:none; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <header class="masthead">
-    <div>
-      <p class="eyebrow">Collection</p>
-      <h1>My Tools</h1>
-      <p class="sub">Small, self-contained web apps. Every card is a live preview of the real file sitting next to this page.</p>
+<header class="hero">
+  <div class="wrap hero-inner">
+    <div class="hero-text">
+      <span class="eyebrow">สื่อการสอนคณิตศาสตร์แบบเปิด</span>
+      <h1>คลังสื่อคณิตศาสตร์</h1>
+      <svg class="underline-svg" viewBox="0 0 220 14" fill="none" aria-hidden="true">
+        <path d="M3 9C40 2 80 12 110 6C140 0 180 11 217 5" stroke="#F0C33B" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <p>รวมสื่อการเรียนการสอนคณิตศาสตร์แบบอินเทอร์แอกทีฟ โดยครูเอฟ สำหรับใช้ประกอบการเรียนในห้องเรียน หรือฝึกฝนด้วยตนเอง เปิดใช้งานได้ทันทีผ่านเบราว์เซอร์</p>
+      <span class="stat-chip"><b id="hero-count">06</b> สื่อคณิตศาสตร์พร้อมใช้งาน</span>
     </div>
-    <div class="tools">
-      <span class="chip" id="count-chip"></span>
-      <button class="btn" id="btn-theme" aria-label="Switch colour theme">Theme</button>
-    </div>
-  </header>
 
-  <div class="filterbar" id="filterbar" hidden>
-    <div class="search">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
-      <input type="search" id="q" placeholder="Filter tools…" autocomplete="off" spellcheck="false" aria-label="Filter tools">
+    <!-- graph decoration: kept in the DOM for future reuse, hidden for now -->
+    <div class="doodle" aria-hidden="true" hidden>
+      <svg viewBox="0 0 400 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- axes -->
+        <line x1="55" y1="30" x2="55" y2="300" stroke="#F7F5EE" stroke-opacity="0.55" stroke-width="1.6"/>
+        <line x1="30" y1="270" x2="380" y2="270" stroke="#F7F5EE" stroke-opacity="0.55" stroke-width="1.6"/>
+        <path d="M50 34 L55 24 L60 34" stroke="#F7F5EE" stroke-opacity="0.55" stroke-width="1.6" fill="none"/>
+        <path d="M370 265 L380 270 L370 275" stroke="#F7F5EE" stroke-opacity="0.55" stroke-width="1.6" fill="none"/>
+        <!-- parabola -->
+        <path d="M75 250 Q220 40 355 250" stroke="#F0C33B" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <!-- compass circle -->
+        <circle cx="230" cy="150" r="62" stroke="#F7F5EE" stroke-opacity="0.5" stroke-width="1.6" stroke-dasharray="4 5"/>
+        <line x1="230" y1="150" x2="292" y2="150" stroke="#F7F5EE" stroke-opacity="0.5" stroke-width="1.6" stroke-dasharray="4 5"/>
+        <circle cx="230" cy="150" r="2.5" fill="#F7F5EE" fill-opacity="0.7"/>
+        <!-- floating glyphs -->
+        <text x="18" y="90" font-family="IBM Plex Mono, monospace" font-size="26" fill="#F7F5EE" fill-opacity="0.5" transform="rotate(-8 18 90)">π</text>
+        <text x="300" y="60" font-family="IBM Plex Mono, monospace" font-size="24" fill="#F0C33B" fill-opacity="0.65" transform="rotate(6 300 60)">∑</text>
+        <text x="335" y="200" font-family="IBM Plex Mono, monospace" font-size="22" fill="#F7F5EE" fill-opacity="0.5" transform="rotate(-4 335 200)">∞</text>
+        <text x="70" y="320" font-family="IBM Plex Mono, monospace" font-size="20" fill="#F7F5EE" fill-opacity="0.45" transform="rotate(5 70 320)">√x</text>
+      </svg>
     </div>
-    <span class="count" id="count-live"></span>
+
+    <!-- venn diagram gimmick: reacts silently to the category filter -->
+    <div class="venn-box" aria-hidden="true">
+      <svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="10" width="280" height="180" rx="14" fill="none" stroke="#F7F5EE" stroke-opacity="0.28" stroke-width="1.6" stroke-dasharray="5 6"/>
+        <circle id="venn-left" cx="115" cy="100" r="62" fill="#F0C33B" fill-opacity="0.55" stroke="#F0C33B" stroke-opacity="0.9" stroke-width="1.5" style="mix-blend-mode:screen;"/>
+        <circle id="venn-right" cx="185" cy="100" r="62" fill="#D9503F" fill-opacity="0.55" stroke="#D9503F" stroke-opacity="0.9" stroke-width="1.5" style="mix-blend-mode:screen;"/>
+        <text id="venn-left-num" x="115" y="112" font-family="IBM Plex Mono, monospace" font-weight="600" font-size="34" text-anchor="middle" fill="#F7F5EE" stroke="#132922" stroke-width="3" paint-order="stroke" opacity="0"></text>
+        <text id="venn-right-num" x="185" y="112" font-family="IBM Plex Mono, monospace" font-weight="600" font-size="34" text-anchor="middle" fill="#F7F5EE" stroke="#132922" stroke-width="3" paint-order="stroke" opacity="0"></text>
+      </svg>
+    </div>
   </div>
+  <div class="torn-edge"></div>
+</header>
 
-  <main class="grid" id="grid"></main>
-  <p class="empty" id="empty" hidden>Nothing matches that filter.</p>
+<main class="wrap">
+  <section class="resources">
+    <div class="section-head">
+      <h2>สื่อการเรียนรู้ทั้งหมด</h2>
+      <div class="controls">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="search" id="search-input" placeholder="ค้นหา" autocomplete="off" aria-label="ค้นหาสื่อการสอนจากชื่อเรื่อง คำอธิบาย หรือแท็ก">
+          <button type="button" class="search-clear" id="search-clear" aria-label="ล้างคำค้นหา" hidden>&times;</button>
+        </div>
+        <div class="filter-group" role="group" aria-label="ตัวกรองหมวดหมู่">
+          <span class="filter-label">หมวดหมู่</span>
+          <button type="button" class="filter-btn active" data-filter="" aria-pressed="true">ทั้งหมด</button>
+          <button type="button" class="filter-btn" data-filter="สื่อการสอน" aria-pressed="false">สื่อการสอน</button>
+          <button type="button" class="filter-btn" data-filter="เกม" aria-pressed="false">เกม</button>
+        </div>
+        <span class="count" id="resource-count">06 รายการ</span>
+      </div>
 
-  <p class="foot">Add a tool by dropping its <code>.html</code> file in this folder and adding one line to <code>APPS</code>.</p>
-</div>
+      <div class="level-filter-row" role="group" aria-label="ตัวกรองระดับชั้น">
+        <span class="filter-label">ระดับชั้น</span>
+        <button type="button" class="level-btn active" data-level="" aria-pressed="true">ทั้งหมด</button>
+        <button type="button" class="level-btn lvl-ps" data-level="ประถม" aria-pressed="false">ประถม</button>
+        <button type="button" class="level-btn lvl-jh" data-level="ม.ต้น" aria-pressed="false">ม.ต้น</button>
+        <button type="button" class="level-btn lvl-sh" data-level="ม.ปลาย" aria-pressed="false">ม.ปลาย</button>
+        <button type="button" class="level-btn lvl-uni" data-level="มหาลัย" aria-pressed="false">มหาลัย</button>
+        <button type="button" class="level-btn lvl-other" data-level="อื่น ๆ" aria-pressed="false">อื่น ๆ</button>
+      </div>
+    </div>
+
+    <div class="grid">
+
+      <a class="card" href="P1-6/origin-area.html" target="_blank" aria-label="เปิดที่มาของสูตรพื้นที่" data-categories="สื่อการสอน" data-level="ประถม">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="P1-6/origin-area.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">พื้นที่</span><span class="level-tag lvl-ps">ประถม</span></div>
+        <h3>ที่มาของสูตรพื้นที่</h3>
+        <p>กว้าง × ยาว พอเข้าใจ แล้ว ฐาน × สูง ล่ะ มาจากไหนกันนะ</p>
+        <span class="cta">เปิดเรียนรู้
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="General/multi-dimension.html" target="_blank" aria-label="เปิดมิติที่สูงขึ้น" data-categories="สื่อการสอน" data-level="อื่น ๆ">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="General/multi-dimension.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">มิติ</span><span class="level-tag lvl-other">อื่น ๆ</span></div>
+        <h3>มิติที่สูงขึ้น</h3>
+        <p>เราอาจเคยเห็นเส้นตรง กราฟบนระนาบ 2 มิติ และกราฟในปริภูมิ 3 มิติแล้ว แล้วถ้ามีเกินกว่า 3 มิติล่ะ เราจะทําอย่างไร</p>
+        <span class="cta">เปิดเรียนรู้
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="M1-3/sqrt2-paper.html" target="_blank" aria-label="เปิดจํานวนในกระดาษ" data-categories="สื่อการสอน" data-level="ม.ต้น">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="M1-3/sqrt2-paper.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">จํานวนอตรรกยะ</span><span class="level-tag lvl-jh">ม.ต้น</span></div>
+        <h3>จํานวนในกระดาษ</h3>
+        <p>มีจํานวนอยู่ตัวหนึ่ง ที่ซ่อนอยู่ในกระดาษที่คุณเคยใช้</p>
+        <span class="cta">เปิดเรียนรู้
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="matrix-multiplication-trainer.html" target="_blank" aria-label="เปิดฝึกคูณเมทริกซ์" data-categories="สื่อการสอน" data-level="ม.ปลาย">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="matrix-multiplication-trainer.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">เมทริกซ์</span><span class="level-tag lvl-sh">ม.ปลาย</span></div>
+        <h3>ฝึกการคูณเมทริกซ์</h3>
+        <p>ฝึกการคูณเมทริกซ์ตามขั้นตอนทีละขั้น</p>
+        <span class="cta">ฝึกฝนกันเลย
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="M4-6/logic-connectives.html" target="_blank" aria-label="เปิดบทเรียนตัวเชื่อมประพจน์ตรรกศาสตร์" data-categories="สื่อการสอน" data-level="ม.ปลาย">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="M4-6/logic-connectives.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">ตรรกศาสตร์</span><span class="level-tag lvl-sh">ม.ปลาย</span></div>
+        <h3>ตัวเชื่อมประพจน์ตรรกศาสตร์</h3>
+        <p>เรียนรู้ตัวเชื่อมประพจน์ และ, หรือ, ไม่ใช่, ถ้า...แล้ว ผ่านสื่อโต้ตอบพร้อมตัวอย่างประกอบความเข้าใจ</p>
+        <span class="cta">เปิดเรียน
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="M4-6/logic-parlor.html" target="_blank" aria-label="เปิดเกมการ์ดตรรกศาสตร์" data-categories="เกม" data-level="ม.ปลาย">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="M4-6/logic-parlor.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">ตรรกศาสตร์</span><span class="level-tag lvl-sh">ม.ปลาย</span></div>
+        <h3>เกมการ์ดตรรกศาสตร์</h3>
+        <p>ฝึกฝนการใช้ตัวเชื่อมประพจน์ ผ่านเกมการ์ดที่วัดทั้งทักษะและดวงการจั่วการ์ด</p>
+        <span class="cta">เปิดเล่น
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="M4-6/casino-expected-value.html" target="_blank" aria-label="เปิดเกมค่าคาดหมาย" data-categories="เกม" data-level="ม.ปลาย">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="M4-6/casino-expected-value.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">ค่าคาดหมาย</span><span class="level-tag lvl-sh">ม.ปลาย</span></div>
+        <h3>เกมค่าคาดหมาย และตัวแปรสุ่ม</h3>
+        <p>เรียนรู้เรื่องค่าคาดหมาย และตัวแปรสุ่ม ผ่านสถานการณ์จำลองที่อาศัยทั้งความรู้และไหวพริบ</p>
+        <span class="cta">เปิดเล่น
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="M4-6/Cube-folding.html" target="_blank" aria-label="เปิดโจทย์พับกล่อง" data-categories="สื่อการสอน เกม" data-level="ม.ปลาย">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="M4-6/Cube-folding.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">TGAT2</span><span class="level-tag lvl-sh">ม.ปลาย</span></div>
+        <h3>โจทย์พับกล่อง</h3>
+        <p>ฝึกทําโจทย์พับกล่อง พร้อมแอพพลิเคชั่นการเชื่อมต่อด้าน และหลักการที่ช่วยเสริมความเข้าใจ</p>
+        <span class="cta">ฝึกฝนกันเลย
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="M4-6/complex-roots-explorer.html" target="_blank" aria-label="เปิดรากเชิงซ้อน" data-categories="สื่อการสอน" data-level="ม.ปลาย">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="M4-6/complex-roots-explorer.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">จํานวนเชิงซ้อน</span><span class="level-tag lvl-sh">ม.ปลาย</span></div>
+        <h3>รากเชิงซ้อน</h3>
+        <p>คุณสมบัติที่ไม่เคยมีจํานวนจริงไหนให้ได้ ตอนนี้มีจํานวนที่ทําได้แล้วนะ</p>
+        <span class="cta">เปิดเรียนรู้
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="University/intro-coding-theory.html" target="_blank" aria-label="เปิดทฤษฎีรหัส" data-categories="สื่อการสอน" data-level="มหาลัย">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="University/intro-coding-theory.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">ทฤษฎีรหัส</span><span class="level-tag lvl-uni">มหาลัย</span></div>
+        <h3>การเข้ารหัส</h3>
+        <p>ถ้าข้อความที่ส่งไป ระหว่างทางเกิดข้อผิดพลาดข้างใน ระบบจะรู้ได้อย่างไร</p>
+        <span class="cta">เปิดเรียนรู้
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="University/simple-take-away-game.html" target="_blank" aria-label="เปิดเกมนับเลข" data-categories="เกม" data-level="มหาลัย">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="University/simple-take-away-game.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">ทฤษฎีเกม</span><span class="level-tag lvl-uni">มหาลัย</span></div>
+        <h3>เกมนับเลข (Take-away game)</h3>
+        <p>ปะทะกับบอทในเกมนับเลขที่โด่งดังมาตั้งแต่สมัยก่อน</p>
+        <span class="cta">เปิดเล่น
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="University/nim.html" target="_blank" aria-label="เปิดเกมนิม" data-categories="เกม" data-level="มหาลัย">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="University/nim.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">ทฤษฎีเกม</span><span class="level-tag lvl-uni">มหาลัย</span></div>
+        <h3>เกมนิม หยิบเหรียญ</h3>
+        <p>ฝึกการตัดสินใจ และทําความรู้จักเกมนิมและเบื้องหลังกลยุทธ์ที่โด่งดังในทฤษฎีเกม</p>
+        <span class="cta">เปิดเล่น
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="University/turning-turtles.html" target="_blank" aria-label="เปิดเกมกลับเต่า" data-categories="เกม" data-level="มหาลัย">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="University/turning-turtles.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">ทฤษฎีเกม</span><span class="level-tag lvl-uni">มหาลัย</span></div>
+        <h3>เกมพลิกเต่า (Turning turtles)</h3>
+        <p>วัดทักษะการตัดสินใจในเกมพลิกเหรียญที่ไม่ซับซ้อน แต่แฝงไปด้วยกลยุทธ์ทางคณิตศาสตร์</p>
+        <span class="cta">เปิดเล่น
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="M4-6/pizza-trig.html" target="_blank" aria-label="เปิดพิซซ่าตรีโกณ" data-categories="เกม" data-level="ม.ปลาย">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="M4-6/pizza-trig.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">ฟังก์ชันตรีโกณมิติ</span><span class="level-tag lvl-sh">ม.ปลาย</span></div>
+        <h3>พิซซ่าตรีโกณมิติ</h3>
+        <p>ฝึกการคิดค่าของฟังก์ชันตรีโกณมิติผ่านการเล่นเกมส่งพิซซ่าให้ถูกที่ ถูกเวลา อย่าช้ามากล่ะ เพราะลูกค้ารออยู่</p>
+        <span class="cta">เปิดเล่น
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="General/Birthday-math-trick.html" target="_blank" aria-label="เปิดทายใจวันเกิด" data-categories="เกม" data-level="อื่น ๆ">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="General/Birthday-math-trick.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">เกมทายใจ</span><span class="level-tag lvl-other">อื่น ๆ</span></div>
+        <h3>ทายใจวันเกิด</h3>
+        <p>ครูทายวันเกิดเราได้ไง ใบ้ให้ว่าครูใช้คณิตศาสตร์✨</p>
+        <span class="cta">เปิดเล่น
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <a class="card" href="M4-6/Math-card-game.html" target="_blank" aria-label="เปิดเกมไพ่คณิตศาสตร์" data-categories="เกม" data-level="ม.ปลาย">
+        <span class="hole"></span>
+        <div class="card-preview">
+          <iframe data-src="M4-6/Math-card-game.html" tabindex="-1" aria-hidden="true" sandbox="allow-scripts allow-same-origin"></iframe>
+          <div class="preview-shield"></div>
+          <span class="preview-badge">ตัวอย่าง</span>
+        </div>
+        <div class="tag-row"><span class="tag">เกมฝึกทักษะ</span><span class="level-tag lvl-sh">ม.ปลาย</span></div>
+        <h3>เกมไพ่คณิตศาสตร์</h3>
+        <p>ฝึกทักษะการคิดคํานวณผ่านเกมจับคู่และไพ่คณิตศาสตร์ เหมาะสําหรับฝึกความไวในการคํานวณอย่างสนุกสนาน</p>
+        <span class="cta">เปิดเล่น
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+      </a>
+
+      <div class="card placeholder">
+        <span class="plus">+</span>
+        <h3>เร็ว ๆ นี้</h3>
+        <p>สื่อการสอนใหม่กำลังจะถูกเพิ่มเข้ามาในคลังนี้</p>
+      </div>
+
+    </div>
+
+    <p class="empty-state" id="empty-state" hidden>ไม่พบสื่อที่ตรงกับคำค้นหา ลองใช้คำอื่น หรือล้างตัวกรอง</p>
+  </section>
+</main>
+
+<footer class="wrap">
+  <div class="footer-row">
+    <div class="credit">จัดทำโดย <b>Natthaphat Thongsom (Kru F)</b></div>
+    <div class="footer-meta">MATH RESOURCE HUB · GITHUB PAGES</div>
+  </div>
+</footer>
 
 <script>
-/* ==========================================================================
-   THE ONLY THING YOU NEED TO EDIT
-   --------------------------------------------------------------------------
-   Add one object per app. All files live in this same folder.
-     file  — filename, relative to this page          (required)
-     title — display name                             (required)
-     desc  — one short line                           (required)
-     tag   — optional category chip
-     zoom  — optional preview scale. Lower = more of the app fits in the card.
-             Default 0.42 (~2.4x the card width of app viewport).
-   ========================================================================== */
-const APPS = [
-  {
-    file:  "claude-limits.html",
-    title: "Limit Pace",
-    desc:  "Claude Pro usage, logged by hand and paced against the rolling session and weekly windows.",
-    tag:   "tracker",
-    zoom:  0.4
-  },
-];
+  const cards = Array.from(document.querySelectorAll('.card:not(.placeholder)'));
+  const placeholderCard = document.querySelector('.card.placeholder');
+  const heroCountEl = document.getElementById('hero-count');
+  const resourceCountEl = document.getElementById('resource-count');
+  const emptyStateEl = document.getElementById('empty-state');
+  const filterButtons = Array.from(document.querySelectorAll('.filter-btn'));
+  const levelButtons = Array.from(document.querySelectorAll('.level-btn'));
+  const searchInput = document.getElementById('search-input');
+  const searchClearBtn = document.getElementById('search-clear');
+  const vennLeft = document.getElementById('venn-left');
+  const vennRight = document.getElementById('venn-right');
+  const vennLeftNum = document.getElementById('venn-left-num');
+  const vennRightNum = document.getElementById('venn-right-num');
+  let activeFilter = ''; // '' = ทั้งหมด (show all)
+  let activeLevel = '';  // '' = ทั้งหมด (show all)
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ========================================================================== */
+  function pad(n){ return String(n).padStart(2, '0'); }
 
-const DEFAULT_ZOOM = 0.42;
-const grid = document.getElementById("grid");
-const emptyMsg = document.getElementById("empty");
-const filterbar = document.getElementById("filterbar");
-const qInput = document.getElementById("q");
-const countChip = document.getElementById("count-chip");
-const countLive = document.getElementById("count-live");
+  // hero badge always reflects the full library size
+  if (heroCountEl) heroCountEl.textContent = pad(cards.length);
 
-/* ---- theme ---- */
-const THEME_KEY = "tools.theme";
-function applyTheme(t){
-  if(t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
-  else document.documentElement.removeAttribute("data-theme");
-}
-function currentTheme(){
-  const saved = document.documentElement.getAttribute("data-theme");
-  if(saved) return saved;
-  return matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light";
-}
-try{ applyTheme(localStorage.getItem(THEME_KEY)); }catch(e){}
-/* Previews follow the gallery's theme where the browser allows it (served over
-   http). On file:// the frame is a foreign origin, so it keeps the OS theme. */
-function syncFrameTheme(frame){
-  try{
-    const d = frame.contentDocument;
-    if(!d || !d.documentElement) return;
-    const t = document.documentElement.getAttribute("data-theme");
-    t ? d.documentElement.setAttribute("data-theme", t)
-      : d.documentElement.removeAttribute("data-theme");
-  }catch(e){ /* cross-origin: leave the app alone */ }
-}
-document.getElementById("btn-theme").addEventListener("click", () => {
-  const next = currentTheme() === "dark" ? "light" : "dark";
-  applyTheme(next);
-  try{ localStorage.setItem(THEME_KEY, next); }catch(e){}
-  document.querySelectorAll(".card iframe").forEach(syncFrameTheme);
-});
-
-/* ---- render ---- */
-const esc = s => String(s).replace(/[&<>"']/g, c => (
-  {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]
-));
-
-const ICON_BROKEN =
-  '<svg viewBox="0 0 24 24" aria-hidden="true">' +
-  '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z"/>' +
-  '<path d="M4 9h16"/><path d="m9.5 13.5 5 5m0-5-5 5"/></svg>';
-
-function cardFor(app){
-  const zoom = typeof app.zoom === "number" ? app.zoom : DEFAULT_ZOOM;
-  const el = document.createElement("article");
-  el.className = "card";
-  el.dataset.preview = "idle";
-  el.dataset.hay = [app.title, app.desc, app.tag, app.file].filter(Boolean).join(" ").toLowerCase();
-  el.innerHTML =
-    '<div class="stage" style="--zoom:' + zoom + '">' +
-      '<div class="fallback">' + ICON_BROKEN +
-        '<b>Preview unavailable</b><span>' + esc(app.file) + '</span>' +
-      '</div>' +
-      '<div class="veil"></div>' +
-    '</div>' +
-    '<div class="body">' +
-      '<div class="card-head">' +
-        '<h2><a class="link" href="' + esc(app.file) + '">' + esc(app.title) + '</a></h2>' +
-        (app.tag ? '<span class="chip small tag">' + esc(app.tag) + '</span>' : '') +
-      '</div>' +
-      '<p class="desc">' + esc(app.desc) + '</p>' +
-      '<div class="card-foot">' +
-        '<span class="open" aria-hidden="true">Open <span class="arw">&rarr;</span></span>' +
-        '<span class="file" title="' + esc(app.file) + '">' + esc(app.file) + '</span>' +
-      '</div>' +
-    '</div>';
-  el._app = app;
-  return el;
-}
-
-/* ---- preview loading, with a graceful fallback ---- */
-function mountPreview(card){
-  const app = card._app;
-  if(card.dataset.preview !== "idle") return;
-  card.dataset.preview = "loading";
-
-  const stage = card.querySelector(".stage");
-  const frame = document.createElement("iframe");
-  frame.className = "shot";
-  frame.src = app.file;
-  frame.title = app.title + " preview";
-  frame.tabIndex = -1;
-  frame.setAttribute("aria-hidden", "true");
-  frame.setAttribute("scrolling", "no");
-  frame.setAttribute("referrerpolicy", "no-referrer");
-
-  let settled = false;
-  const timer = setTimeout(() => fail(), 10000);
-  function ok(){
-    if(settled) return;
-    settled = true; clearTimeout(timer);
-    card.dataset.preview = "ready";
-    syncFrameTheme(frame);
-  }
-  function fail(){
-    if(settled) return;
-    settled = true; clearTimeout(timer);
-    card.dataset.preview = "failed";
-    frame.remove();
-  }
-
-  frame.addEventListener("error", fail);
-  frame.addEventListener("load", () => {
-    // Same-origin (served over http): an empty document means the file is
-    // missing or blank. Cross-origin / file:// throws — assume it rendered.
-    let doc = null;
-    try{ doc = frame.contentDocument; }catch(e){ return ok(); }
-    if(!doc) return ok();
-    const blank = d => !d.body || (d.body.children.length === 0 && !d.body.textContent.trim());
-    if(!blank(doc)) return ok();
-    // Give a JS-rendered app a beat to paint before calling it a failure.
-    setTimeout(() => {
-      let d = null;
-      try{ d = frame.contentDocument; }catch(e){ return ok(); }
-      (!d || blank(d)) ? fail() : ok();
-    }, 800);
+  // precompute searchable text (title + description + tag + level) per card
+  const cardSearchText = new Map();
+  cards.forEach(card => {
+    const title = card.querySelector('h3')?.textContent || '';
+    const desc = card.querySelector('p')?.textContent || '';
+    const tag = card.querySelector('.tag')?.textContent || '';
+    const level = card.querySelector('.level-tag')?.textContent || '';
+    cardSearchText.set(card, (title + ' ' + desc + ' ' + tag + ' ' + level).toLowerCase());
   });
 
-  // Over http(s) we can ask whether the file exists at all; file:// blocks this.
-  if(location.protocol === "http:" || location.protocol === "https:"){
-    fetch(app.file, {method:"HEAD"})
-      .then(r => { if(!r.ok) fail(); })
-      .catch(() => {});
+  // silent gimmick: reflects the active category filter as a 2-set venn diagram.
+  // "ทั้งหมด" shows both circles with no numbers; a category filter highlights
+  // its circle and reveals the count, dimming the other — no labels, ever.
+  function updateVenn(filter, count){
+    if (!vennLeft || !vennRight) return;
+    if (filter === 'สื่อการสอน') {
+      vennLeft.classList.add('venn-active'); vennLeft.classList.remove('venn-dim');
+      vennRight.classList.add('venn-dim'); vennRight.classList.remove('venn-active');
+      if (vennLeftNum) { vennLeftNum.textContent = count; vennLeftNum.style.opacity = '1'; }
+      if (vennRightNum) { vennRightNum.textContent = ''; vennRightNum.style.opacity = '0'; }
+    } else if (filter === 'เกม') {
+      vennRight.classList.add('venn-active'); vennRight.classList.remove('venn-dim');
+      vennLeft.classList.add('venn-dim'); vennLeft.classList.remove('venn-active');
+      if (vennRightNum) { vennRightNum.textContent = count; vennRightNum.style.opacity = '1'; }
+      if (vennLeftNum) { vennLeftNum.textContent = ''; vennLeftNum.style.opacity = '0'; }
+    } else {
+      vennLeft.classList.remove('venn-active', 'venn-dim');
+      vennRight.classList.remove('venn-active', 'venn-dim');
+      if (vennLeftNum) { vennLeftNum.textContent = ''; vennLeftNum.style.opacity = '0'; }
+      if (vennRightNum) { vennRightNum.textContent = ''; vennRightNum.style.opacity = '0'; }
+    }
   }
 
-  stage.insertBefore(frame, stage.firstChild);
-}
-
-/* Only boot previews as cards come into view. */
-const io = "IntersectionObserver" in window
-  ? new IntersectionObserver((entries, obs) => {
-      for(const e of entries){
-        if(e.isIntersecting){ obs.unobserve(e.target); mountPreview(e.target); }
+  function applyFilters(forceReveal){
+    const query = (searchInput?.value || '').trim().toLowerCase();
+    const isFiltering = activeFilter !== '' || activeLevel !== '' || query !== '';
+    let visibleCount = 0;
+    cards.forEach(card => {
+      const categories = (card.dataset.categories || '').split(' ').filter(Boolean);
+      const categoryMatch = activeFilter === '' || categories.includes(activeFilter);
+      const levelMatch = activeLevel === '' || card.dataset.level === activeLevel;
+      const searchMatch = query === '' || (cardSearchText.get(card) || '').includes(query);
+      const matches = categoryMatch && levelMatch && searchMatch;
+      card.style.display = matches ? '' : 'none';
+      if (matches) {
+        visibleCount++;
+        // once the user starts filtering, skip the scroll fade-in so a card
+        // brought back by a filter never gets stuck invisible
+        if (forceReveal) card.classList.add('in-view');
       }
-    }, {rootMargin:"250px"})
-  : null;
+    });
+    // the "coming soon" card isn't a real search result, so hide it while
+    // actively searching/filtering, and show the empty-state only then
+    if (placeholderCard) placeholderCard.style.display = isFiltering ? 'none' : '';
+    if (emptyStateEl) emptyStateEl.hidden = !(isFiltering && visibleCount === 0);
+    if (resourceCountEl) resourceCountEl.textContent = pad(visibleCount) + ' รายการ';
+    updateVenn(activeFilter, visibleCount);
+  }
 
-const cards = APPS.map(app => {
-  const el = cardFor(app);
-  grid.appendChild(el);
-  io ? io.observe(el) : mountPreview(el);
-  return el;
-});
+  filterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeFilter = btn.dataset.filter;
+      filterButtons.forEach(b => {
+        const isActive = b === btn;
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-pressed', String(isActive));
+      });
+      applyFilters(true);
+    });
+  });
 
-/* ---- counts + filter (only worth showing once there are a few) ---- */
-countChip.textContent = APPS.length + (APPS.length === 1 ? " tool" : " tools");
-if(APPS.length > 3){
-  filterbar.hidden = false;
-  const apply = () => {
-    const q = qInput.value.trim().toLowerCase();
-    let shown = 0;
-    for(const c of cards){
-      const hit = !q || c.dataset.hay.includes(q);
-      c.hidden = !hit;
-      if(hit) shown++;
-    }
-    emptyMsg.hidden = shown > 0;
-    countLive.textContent = q ? shown + " of " + cards.length : "";
-  };
-  qInput.addEventListener("input", apply);
-  apply();
-}
-if(APPS.length === 0){
-  emptyMsg.hidden = false;
-  emptyMsg.textContent = "No tools yet — add an entry to the APPS array in this file.";
-}
+  levelButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeLevel = btn.dataset.level;
+      levelButtons.forEach(b => {
+        const isActive = b === btn;
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-pressed', String(isActive));
+      });
+      applyFilters(true);
+    });
+  });
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      if (searchClearBtn) searchClearBtn.hidden = searchInput.value.length === 0;
+      applyFilters(true);
+    });
+  }
+  if (searchClearBtn) {
+    searchClearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      searchClearBtn.hidden = true;
+      applyFilters(true);
+      searchInput.focus();
+    });
+  }
+
+  applyFilters(false); // initial count only — let the scroll-reveal below handle visibility
+
+  // scroll-reveal entrance for cards
+  if (reduceMotion || !('IntersectionObserver' in window)) {
+    cards.forEach(c => c.classList.add('in-view'));
+  } else {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('in-view'), i * 90);
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    cards.forEach(c => io.observe(c));
+  }
+
+  // lazy-load the live preview iframes: fetch a page only while its card is
+  // near the viewport, and unload it again once the card scrolls well away.
+  // Each preview is a whole separate webpage (own JS/canvas/etc.), so with
+  // 15+ cards on the page, keeping every previously-seen preview resident
+  // forever can push mobile Safari over its per-tab memory ceiling — which
+  // is what makes it silently kill and reload the tab on a fast scroll.
+  // Unloading out-of-view frames keeps only a handful loaded at any time.
+  const previewFrames = Array.from(document.querySelectorAll('.card-preview iframe[data-src]'));
+  previewFrames.forEach(frame => {
+    frame.addEventListener('load', () => {
+      if (!frame.getAttribute('src')) return; // fires on unload too; ignore that
+      if (reduceMotion) { frame.classList.add('loaded'); }
+      else { requestAnimationFrame(() => frame.classList.add('loaded')); }
+    });
+  });
+  if ('IntersectionObserver' in window) {
+    const previewIo = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const frame = entry.target;
+        if (entry.isIntersecting) {
+          if (!frame.getAttribute('src')) frame.src = frame.dataset.src;
+        } else {
+          frame.classList.remove('loaded');
+          frame.removeAttribute('src'); // free the memory until it's back in view
+        }
+      });
+    }, { threshold: 0, rootMargin: '150px 0px' });
+    previewFrames.forEach(frame => previewIo.observe(frame));
+  } else {
+    // no IntersectionObserver support — just load everything up front
+    previewFrames.forEach(frame => { frame.src = frame.dataset.src; });
+  }
 </script>
+
 </body>
 </html>
