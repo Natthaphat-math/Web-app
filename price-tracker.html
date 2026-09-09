@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Price Tracker</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --card:#ffffff; --ink:#16181d; --muted:#6b7280; --line:#e4e6eb;
+    --accent:#2f6df6; --accent-ink:#ffffff; --down:#0f9d58; --up:#d93b3b;
+    --chip:#eef1f6; --danger:#d93b3b; --warn:#b45309; --shadow:0 1px 2px rgba(16,18,25,.06),0 4px 14px rgba(16,18,25,.05);
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#101216; --card:#191c22; --ink:#e9ebf0; --muted:#9aa1ad; --line:#272b33;
+      --accent:#5b8dff; --accent-ink:#0b0e13; --down:#3ecf8e; --up:#ff6b6b;
+      --chip:#232730; --danger:#ff6b6b; --warn:#f0a92e; --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-text-size-adjust:100%;
+  }
+  button,input,select,textarea{font:inherit;color:inherit}
+  button{cursor:pointer}
+
+  header.app{
+    position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--line);
+    padding:calc(env(safe-area-inset-top) + 10px) 14px 10px; display:flex; align-items:center; gap:8px;
+  }
+  header.app h1{font-size:18px;margin:0;flex:1;letter-spacing:-.01em}
+  .iconbtn{
+    background:var(--chip); border:0; border-radius:10px; padding:7px 10px; font-size:13px; font-weight:600; color:var(--ink);
+  }
+  .iconbtn:active{transform:scale(.97)}
+  main{padding:14px 14px calc(96px + env(safe-area-inset-bottom)); max-width:720px; margin:0 auto}
+
+  .search{
+    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card);
+    margin-bottom:16px; outline:none;
+  }
+  .search:focus{border-color:var(--accent)}
+
+  h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:22px 0 8px;font-weight:700}
+  h2.sec:first-child{margin-top:4px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .list{display:flex;flex-direction:column;gap:8px}
+  .row{
+    display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px 14px;box-shadow:var(--shadow);
+  }
+  .row:active{background:var(--chip)}
+  .row .grow{flex:1;min-width:0}
+  .row .title,.row .sub,.cat .name,.cat .meta{display:block}
+  .row .right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+  .row .title{font-weight:650;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .sub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .row .price{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .row .right{text-align:right}
+
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  @media (min-width:560px){.grid{grid-template-columns:repeat(3,1fr)}}
+  .cat{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;
+    text-align:left;box-shadow:var(--shadow)
+  }
+  .cat:active{background:var(--chip)}
+  .cat .name{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cat .meta{font-size:12.5px;color:var(--muted);margin-top:4px}
+
+  .chip{display:inline-block;background:var(--chip);color:var(--muted);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600}
+  .chip.buy{background:color-mix(in srgb,var(--down) 16%,transparent);color:var(--down)}
+  .chip.arch{background:color-mix(in srgb,var(--muted) 20%,transparent);color:var(--muted)}
+  .chip.age{background:var(--chip);color:var(--ink)}
+  .chip.exp-bad{background:color-mix(in srgb,var(--up) 16%,transparent);color:var(--up)}
+  .chip.exp-soon{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+  .chip.exp-ok{background:var(--chip);color:var(--muted)}
+  .row .tags{margin-top:7px}
+  .delta{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+  .delta.down{color:var(--down)} .delta.up{color:var(--up)} .delta.flat{color:var(--muted)}
+
+  .empty{color:var(--muted);font-size:14.5px;background:var(--card);border:1px dashed var(--line);border-radius:var(--radius);padding:22px 16px;text-align:center}
+
+  .back{background:none;border:0;padding:0;color:var(--accent);font-weight:600;font-size:14.5px;margin-bottom:10px}
+  .vh{font-size:23px;line-height:1.2;margin:0 0 6px;letter-spacing:-.02em}
+  .vmeta{color:var(--muted);font-size:14px;margin-bottom:4px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .note{white-space:pre-wrap;background:var(--chip);border-radius:12px;padding:10px 12px;font-size:14.5px;margin-top:10px}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:11px 10px;box-shadow:var(--shadow)}
+  .stat .k{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+  .stat .v{font-weight:700;font-variant-numeric:tabular-nums;margin-top:3px;white-space:nowrap;font-size:15.5px}
+  .stat .d{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .stat.lo .v{color:var(--down)} .stat.hi .v{color:var(--up)}
+
+  .chartbox{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 6px 4px;box-shadow:var(--shadow);overflow-x:auto}
+  svg.chart{display:block;width:100%;height:auto}
+
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+  .btn{border:1px solid var(--line);background:var(--card);border-radius:11px;padding:10px 14px;font-weight:650;font-size:14.5px}
+  .btn:active{transform:scale(.98)}
+  .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;flex:1;min-width:160px}
+  .btn.danger{color:var(--danger)}
+  .btn.full{width:100%}
+
+  .fab{
+    position:fixed;right:calc(16px + env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));
+    width:56px;height:56px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);
+    font-size:30px;line-height:1;box-shadow:0 6px 20px rgba(47,109,246,.4);z-index:30;
+  }
+  .fab:active{transform:scale(.95)}
+
+  .backdrop{position:fixed;inset:0;background:rgba(8,10,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+  @media (min-width:600px){.backdrop{align-items:center}}
+  .sheet{
+    background:var(--card);width:100%;max-width:520px;max-height:92vh;overflow:auto;
+    border-radius:18px 18px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));
+  }
+  @media (min-width:600px){.sheet{border-radius:18px}}
+  .sheet h3{margin:0 0 14px;font-size:18px;letter-spacing:-.01em}
+  label.f{display:block;margin-bottom:12px;font-size:13px;font-weight:700;color:var(--muted)}
+  label.f .ctl{display:block;margin-top:5px}
+  input[type=text],input[type=number],input[type=date],select,textarea{
+    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:var(--bg);outline:none;font-weight:500
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+  textarea{min-height:76px;resize:vertical}
+  label.check{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px;margin-bottom:12px;font-weight:600;font-size:14.5px}
+  label.check input{width:20px;height:20px;accent-color:var(--accent)}
+  .sheet-actions{display:flex;gap:8px;margin-top:6px}
+  .sheet-actions .btn{flex:1}
+  .err{color:var(--danger);font-size:13.5px;font-weight:600;margin-bottom:10px;display:none}
+
+  .hist{display:flex;flex-direction:column;gap:8px}
+  .hentry{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:11px 13px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:flex-start}
+  .hentry .grow{flex:1;min-width:0}
+  .hentry .hd{font-size:13px;color:var(--muted)}
+  .hentry .hp{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+  .toolbar select{width:auto;flex:1;padding:8px 10px}
+  .muted{color:var(--muted);font-size:13.5px}
+</style>
+</head>
+<body>
+<header class="app">
+  <h1 id="apptitle">Price Tracker</h1>
+  <button class="iconbtn" data-act="archived-view" type="button">Archive</button>
+  <button class="iconbtn" data-act="data-menu" type="button">Data</button>
+</header>
+<main id="app"></main>
+<button class="fab" id="fab" data-act="add-product" type="button" aria-label="Add product">+</button>
+<div id="modal-root"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------------- storage ---------------- */
+var KEY = 'price-tracker-data';
+var state = { products: [] };
+var view = { name:'dashboard' };
+var search = '';
+var sortMode = 'recent';
+var ownedSort = 'recent';
+
+function uid(){
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'p-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10);
+}
+function load(){
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (!raw) return;
+    var data = JSON.parse(raw);
+    if (data && Array.isArray(data.products)) state = normalize(data);
+  } catch (e) { console.warn('Could not read saved data:', e); }
+}
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch (e) { alert('Could not save to this browser’s storage. Your change may be lost.'); }
+}
+function normalize(data){
+  var out = { products: [] };
+  data.products.forEach(function(p){
+    if (!p || typeof p !== 'object') return;
+    var hist = Array.isArray(p.priceHistory) ? p.priceHistory : [];
+    out.products.push({
+      id: String(p.id || uid()),
+      name: String(p.name || 'Untitled'),
+      category: String(p.category || 'Uncategorised'),
+      platform: String(p.platform || ''),
+      note: String(p.note || ''),
+      archived: !!p.archived,
+      createdAt: String(p.createdAt || new Date().toISOString()),
+      priceHistory: hist.map(function(e){
+        return {
+          price: Number(e && e.price) || 0,
+          date: String((e && e.date) || new Date().toISOString()),
+          discount: String((e && e.discount) || ''),
+          platform: String((e && e.platform) || ''),
+          purchased: !!(e && e.purchased),
+          dateApprox: !!(e && e.dateApprox),
+          approxMonth: Number(e && e.approxMonth) || 0,
+          approxYear: Number(e && e.approxYear) || 0,
+          time: String((e && e.time) || ''),
+          expirationDate: String((e && e.expirationDate) || '')
+        };
+      })
+    });
+  });
+  return out;
+}
+
+/* ---------------- helpers ---------------- */
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function money(n){
+  var v = Number(n) || 0;
+  return '฿\u2009' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtDate(iso){
+  var d = new Date(iso);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+}
+var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var SOON_DAYS = 30;
+
+/* An approximate entry stores the 1st of its month in `date` for sorting and age
+   math, but must never be shown with that invented day number. */
+function fmtEntryDate(e){
+  if (e.dateApprox){
+    var m = MONTHS[(e.approxMonth || 1) - 1] || '';
+    var y = e.approxYear || new Date(e.date).getFullYear();
+    return '~ ' + m + ' ' + y;
+  }
+  var out = fmtDate(e.date);
+  if (e.time) out += ' · ' + e.time;
+  return out;
+}
+function startOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function daysBetween(a, b){ return Math.round((b - a) / 86400000); }
+function plural(n, word){ return n + ' ' + word + (n === 1 ? '' : 's'); }
+
+function ageBreakdown(from, to){
+  var y = to.getFullYear() - from.getFullYear();
+  var m = to.getMonth() - from.getMonth();
+  var d = to.getDate() - from.getDate();
+  if (d < 0){ m -= 1; d += new Date(to.getFullYear(), to.getMonth(), 0).getDate(); }
+  if (m < 0){ y -= 1; m += 12; }
+  return {y:y, m:m, d:d};
+}
+function ageText(e){
+  var from = new Date(e.date);
+  if (isNaN(from)) return '';
+  from = startOfDay(from);
+  var today = startOfDay(new Date());
+  var approx = !!e.dateApprox;
+  var tilde = approx ? '~' : '';
+  if (from > today) return tilde + 'not yet';
+  var days = daysBetween(from, today);
+  if (days < 365) return tilde + plural(days, 'day');
+  var p = ageBreakdown(from, today);
+  var parts = [];
+  if (p.y) parts.push(plural(p.y, 'year'));
+  if (p.m) parts.push(plural(p.m, 'month'));
+  /* an approximate date has no real day number, so never claim one */
+  if (!approx && p.d) parts.push(plural(p.d, 'day'));
+  if (!parts.length) parts.push(plural(days, 'day'));
+  return tilde + parts.join(', ');
+}
+function expStatus(e){
+  if (!e.expirationDate) return null;
+  var exp = new Date(e.expirationDate);
+  if (isNaN(exp)) return null;
+  var days = daysBetween(startOfDay(new Date()), startOfDay(exp));
+  if (days < 0)  return {days:days, cls:'exp-bad',  text:'Expired ' + plural(-days,'day') + ' ago'};
+  if (days === 0) return {days:0,   cls:'exp-bad',  text:'Expires today'};
+  if (days <= SOON_DAYS) return {days:days, cls:'exp-soon', text:'Expires in ' + plural(days,'day')};
+  if (days <= 90) return {days:days, cls:'exp-ok', text:'Expires in ' + plural(days,'day')};
+  return {days:days, cls:'exp-ok', text:'Expires ' + fmtDate(e.expirationDate)};
+}
+function ownedEntries(){
+  var out = [];
+  activeProducts().forEach(function(p){
+    p.priceHistory.forEach(function(e){ if (e.purchased) out.push({p:p, e:e}); });
+  });
+  return out;
+}
+function expiringCount(){
+  var n = 0;
+  ownedEntries().forEach(function(o){
+    var st = expStatus(o.e);
+    if (st && st.days <= SOON_DAYS) n++;
+  });
+  return n;
+}
+
+function byId(id){ for (var i=0;i<state.products.length;i++) if (state.products[i].id === id) return state.products[i]; return null; }
+function asc(p){ return p.priceHistory.slice().sort(function(a,b){ return new Date(a.date) - new Date(b.date); }); }
+function desc(p){ return asc(p).reverse(); }
+function latest(p){ var h = asc(p); return h.length ? h[h.length-1] : null; }
+function extreme(p, kind){
+  var h = asc(p); if (!h.length) return null;
+  var best = h[0];
+  for (var i=1;i<h.length;i++){
+    if (kind === 'lo' ? h[i].price < best.price : h[i].price > best.price) best = h[i];
+  }
+  return best;
+}
+function activeProducts(){ return state.products.filter(function(p){ return !p.archived; }); }
+function categories(){
+  var seen = {}, out = [];
+  state.products.forEach(function(p){
+    var c = p.category || 'Uncategorised';
+    if (!seen[c]) { seen[c] = true; out.push(c); }
+  });
+  out.sort(function(a,b){ return a.localeCompare(b); });
+  return out;
+}
+function deltaHTML(p){
+  var h = asc(p);
+  if (h.length < 2) return '';
+  var last = h[h.length-1].price, prev = h[h.length-2].price;
+  if (!prev) return '';
+  var pct = ((last - prev) / prev) * 100;
+  if (Math.abs(pct) < 0.05) return '<span class="delta flat">— same</span>';
+  var cls = pct < 0 ? 'down' : 'up';
+  var arrow = pct < 0 ? '▼' : '▲';
+  return '<span class="delta ' + cls + '">' + arrow + ' ' + Math.abs(pct).toFixed(1) + '%</span>';
+}
+function entryPlatform(p, e){ return e.platform || p.platform; }
+function todayInputValue(){
+  var d = new Date(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return d.getFullYear() + '-' + m + '-' + day;
+}
+function isoFromInput(v){
+  if (!v) return new Date().toISOString();
+  if (v === todayInputValue()) return new Date().toISOString();
+  var parts = v.split('-');
+  return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0).toISOString();
+}
+
+/* ---------------- rendering ---------------- */
+var app = document.getElementById('app');
+var fab = document.getElementById('fab');
+var title = document.getElementById('apptitle');
+
+function render(){
+  fab.style.display = (view.name === 'dashboard' || view.name === 'category') ? 'block' : 'none';
+  title.textContent = 'Price Tracker';
+  if (view.name === 'dashboard') renderDashboard();
+  else if (view.name === 'category') renderCategory();
+  else if (view.name === 'product') renderProduct();
+  else if (view.name === 'owned') renderOwned();
+  else if (view.name === 'archived') renderArchived();
+  window.scrollTo(0, 0);
+}
+
+/* --- dashboard --- */
+function renderDashboard(){
+  app.innerHTML =
+    '<input class="search" id="search" type="text" placeholder="Search products…" autocomplete="off" value="' + esc(search) + '">' +
+    '<div id="dashbody"></div>';
+  var input = document.getElementById('search');
+  input.addEventListener('input', function(){ search = input.value; renderDashBody(); });
+  renderDashBody();
+}
+function renderDashBody(){
+  var body = document.getElementById('dashbody');
+  if (!body) return;
+  var q = search.trim().toLowerCase();
+
+  if (q){
+    var hits = activeProducts().filter(function(p){
+      return p.name.toLowerCase().indexOf(q) > -1 ||
+             p.category.toLowerCase().indexOf(q) > -1 ||
+             p.platform.toLowerCase().indexOf(q) > -1;
+    });
+    body.innerHTML = '<h2 class="sec">' + hits.length + ' result' + (hits.length === 1 ? '' : 's') + '</h2>' +
+      (hits.length ? '<div class="list">' + hits.map(productRow).join('') + '</div>'
+                   : '<div class="empty">Nothing matches “' + esc(search.trim()) + '”.</div>');
+    return;
+  }
+
+  var html = '';
+
+  /* recent purchases */
+  var buys = [];
+  activeProducts().forEach(function(p){
+    p.priceHistory.forEach(function(e){ if (e.purchased) buys.push({p:p, e:e}); });
+  });
+  buys.sort(function(a,b){ return new Date(b.e.date) - new Date(a.e.date); });
+  buys = buys.slice(0, 5);
+
+  html += '<h2 class="sec">Recent purchases</h2>';
+  html += buys.length
+    ? '<div class="list">' + buys.map(function(b){
+        return '<button class="row" type="button" data-act="open-product" data-id="' + esc(b.p.id) + '">' +
+          '<span class="grow">' +
+            '<span class="title">' + esc(b.p.name) + '</span>' +
+            '<span class="sub">' + esc(entryPlatform(b.p, b.e)) + ' · ' + esc(fmtEntryDate(b.e)) + '</span>' +
+          '</span>' +
+          '<span class="right"><span class="price">' + money(b.e.price) + '</span></span>' +
+        '</button>';
+      }).join('') + '</div>'
+    : '<div class="empty">No purchases yet — tick “I purchased this” when you log a price.</div>';
+
+  /* my products */
+  var owned = ownedEntries();
+  var expiring = expiringCount();
+  html += '<h2 class="sec">My products</h2>';
+  html += '<button class="row" type="button" data-act="owned-view">' +
+      '<span class="grow"><span class="title">Everything you own</span>' +
+      '<span class="sub">' + (owned.length
+          ? owned.length + ' item' + (owned.length === 1 ? '' : 's') + ' · tap to see ages'
+          : 'Nothing owned yet — tick “I purchased this”') + '</span></span>' +
+      (expiring ? '<span class="chip exp-bad">' + expiring + ' expiring</span>' : '') +
+    '</button>';
+
+  /* categories */
+  var actives = activeProducts();
+  html += '<h2 class="sec">Categories</h2>';
+  if (!actives.length){
+    html += '<div class="empty">No products yet — tap + to add one.</div>';
+  } else {
+    var groups = {};
+    actives.forEach(function(p){
+      var c = p.category || 'Uncategorised';
+      (groups[c] = groups[c] || []).push(p);
+    });
+    var names = Object.keys(groups).sort(function(a,b){ return a.localeCompare(b); });
+    html += '<div class="grid">' + names.map(function(c){
+      var list = groups[c];
+      var lowest = null;
+      list.forEach(function(p){
+        var l = latest(p);
+        if (l && (lowest === null || l.price < lowest)) lowest = l.price;
+      });
+      return '<button class="cat" type="button" data-act="open-category" data-cat="' + esc(c) + '">' +
+        '<span class="name">' + esc(c) + '</span>' +
+        '<span class="meta">' + list.length + ' item' + (list.length === 1 ? '' : 's') +
+        (lowest !== null ? ' · from ' + money(lowest) : '') + '</span>' +
+      '</button>';
+    }).join('') + '</div>';
+  }
+
+  var archivedCount = state.products.filter(function(p){ return p.archived; }).length;
+  if (archivedCount){
+    html += '<h2 class="sec">Archive</h2><button class="row" type="button" data-act="archived-view">' +
+      '<span class="grow"><span class="title">Archived products</span>' +
+      '<span class="sub">' + archivedCount + ' hidden from the dashboard</span></span></button>';
+  }
+  body.innerHTML = html;
+}
+
+function productRow(p){
+  var l = latest(p);
+  return '<button class="row" type="button" data-act="open-product" data-id="' + esc(p.id) + '">' +
+    '<span class="grow">' +
+      '<span class="title">' + esc(p.name) + '</span>' +
+      '<span class="sub">' + esc(p.category) + ' · ' + esc(p.platform) +
+        ' · ' + p.priceHistory.length + ' entr' + (p.priceHistory.length === 1 ? 'y' : 'ies') + '</span>' +
+    '</span>' +
+    '<span class="right">' +
+      '<span class="price">' + (l ? money(l.price) : '—') + '</span>' +
+      deltaHTML(p) +
+    '</span>' +
+  '</button>';
+}
+
+/* --- category --- */
+function renderCategory(){
+  var cat = view.category;
+  var list = activeProducts().filter(function(p){ return (p.category || 'Uncategorised') === cat; });
+
+  list.sort(function(a,b){
+    if (sortMode === 'name') return a.name.localeCompare(b.name);
+    if (sortMode === 'price-asc' || sortMode === 'price-desc'){
+      var la = latest(a), lb = latest(b);
+      var pa = la ? la.price : Infinity, pb = lb ? lb.price : Infinity;
+      return sortMode === 'price-asc' ? pa - pb : pb - pa;
+    }
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
+  app.innerHTML =
+    '<button class="back" type="button" data-act="home">‹ Dashboard</button>' +
+    '<h2 class="vh">' + esc(cat) + '</h2>' +
+    '<p class="vmeta">' + list.length + ' product' + (list.length === 1 ? '' : 's') + '</p>' +
+    '<div class="toolbar"><select id="sort">' +
+      opt('recent','Newest first') + opt('name','Name A–Z') +
+      opt('price-asc','Price: low to high') + opt('price-desc','Price: high to low') +
+    '</select></div>' +
+    (list.length ? '<div class="list">' + list.map(productRow).join('') + '</div>'
+                 : '<div class="empty">Nothing in this category yet.</div>');
+
+  var sel = document.getElementById('sort');
+  sel.value = sortMode;
+  sel.addEventListener('change', function(){ sortMode = sel.value; renderCategory(); });
+}
+function opt(v, label){ return '<option value="' + esc(v) + '">' + esc(label) + '</option>'; }
+
+/* --- my products (owned items) --- */
+function ownedRow(o){
+  var st = expStatus(o.e);
+  return '<button class="row" type="button" data-act="open-product" data-id="' + esc(o.p.id) + '">' +
+    '<span class="grow">' +
+      '<span class="title">' + esc(o.p.name) + '</span>' +
+      '<span class="sub">Bought ' + esc(fmtEntryDate(o.e)) + ' · ' + money(o.e.price) + '</span>' +
+      '<span class="tags">' +
+        '<span class="chip age">' + esc(ageText(o.e)) + ' old</span>' +
+        (st ? '<span class="chip ' + st.cls + '">' + esc(st.text) + '</span>' : '') +
+      '</span>' +
+    '</span>' +
+  '</button>';
+}
+function renderOwned(){
+  var items = ownedEntries();
+  items.sort(function(a, b){
+    if (ownedSort === 'oldest') return new Date(a.e.date) - new Date(b.e.date);
+    if (ownedSort === 'expiry'){
+      var sa = expStatus(a.e), sb = expStatus(b.e);
+      if (!sa && !sb) return new Date(b.e.date) - new Date(a.e.date);
+      if (!sa) return 1;
+      if (!sb) return -1;
+      return sa.days - sb.days;
+    }
+    return new Date(b.e.date) - new Date(a.e.date);
+  });
+
+  var expiring = expiringCount();
+  app.innerHTML =
+    '<button class="back" type="button" data-act="home">‹ Dashboard</button>' +
+    '<h2 class="vh">My Products</h2>' +
+    '<div class="vmeta"><span>' + items.length + ' item' + (items.length === 1 ? '' : 's') + ' owned</span>' +
+      (expiring ? '<span class="chip exp-bad">' + expiring + ' expiring within ' + SOON_DAYS + ' days</span>' : '') +
+    '</div>' +
+    (items.length
+      ? '<div class="toolbar"><select id="ownedSort">' +
+          opt('recent','Newest purchase first') + opt('oldest','Oldest first (by age)') +
+          opt('expiry','Soonest expiration first') +
+        '</select></div><div class="list">' + items.map(ownedRow).join('') + '</div>'
+      : '<div class="empty">Nothing owned yet — tick “I purchased this” when adding or logging a price.</div>');
+
+  var sel = document.getElementById('ownedSort');
+  if (sel){
+    sel.value = ownedSort;
+    sel.addEventListener('change', function(){ ownedSort = sel.value; renderOwned(); });
+  }
+}
+
+/* --- archived --- */
+function renderArchived(){
+  var list = state.products.filter(function(p){ return p.archived; });
+  app.innerHTML =
+    '<button class="back" type="button" data-act="home">‹ Dashboard</button>' +
+    '<h2 class="vh">Archived</h2>' +
+    (list.length
+      ? '<div class="list">' + list.map(productRow).join('') + '</div>'
+      : '<div class="empty">Nothing archived.</div>');
+}
+
+/* --- product detail --- */
+function renderProduct(){
+  var p = byId(view.id);
+  if (!p) { view = {name:'dashboard'}; render(); return; }
+  var h = desc(p);
+  var lo = extreme(p,'lo'), hi = extreme(p,'hi'), cur = latest(p);
+
+  var back = {act:'home', label:'Dashboard', cat:''};
+  if (view.from === 'category') back = {act:'open-category', label:p.category, cat:p.category};
+  else if (view.from === 'owned') back = {act:'owned-view', label:'My Products', cat:''};
+  else if (view.from === 'archived') back = {act:'archived-view', label:'Archived', cat:''};
+  var html = '<button class="back" type="button" data-act="' + back.act + '"' +
+      (back.cat ? ' data-cat="' + esc(back.cat) + '"' : '') + '>‹ ' + esc(back.label) + '</button>';
+
+  html += '<h2 class="vh">' + esc(p.name) + '</h2>';
+  html += '<div class="vmeta"><span class="chip">' + esc(p.category) + '</span>' +
+          '<span class="chip">' + esc(p.platform) + '</span>' +
+          (p.archived ? '<span class="chip arch">Archived</span>' : '') +
+          '<span>Added ' + esc(fmtDate(p.createdAt)) + '</span></div>';
+  if (p.note) html += '<div class="note">' + esc(p.note) + '</div>';
+
+  html += '<div class="stats">' +
+    '<div class="stat"><div class="k">Current</div><div class="v">' + (cur ? money(cur.price) : '—') + '</div>' +
+      '<div class="d">' + (cur ? esc(fmtDate(cur.date)) : '') + '</div></div>' +
+    '<div class="stat lo"><div class="k">Lowest</div><div class="v">' + (lo ? money(lo.price) : '—') + '</div>' +
+      '<div class="d">' + (lo ? esc(fmtDate(lo.date)) : '') + '</div></div>' +
+    '<div class="stat hi"><div class="k">Highest</div><div class="v">' + (hi ? money(hi.price) : '—') + '</div>' +
+      '<div class="d">' + (hi ? esc(fmtDate(hi.date)) : '') + '</div></div>' +
+  '</div>';
+
+  html += '<div class="chartbox">' + chartSVG(p) + '</div>';
+
+  html += '<div class="actions">' +
+    '<button class="btn primary" type="button" data-act="log-price" data-id="' + esc(p.id) + '">Log new price</button>' +
+    '<button class="btn" type="button" data-act="edit-product" data-id="' + esc(p.id) + '">Edit</button>' +
+    '<button class="btn" type="button" data-act="toggle-archive" data-id="' + esc(p.id) + '">' + (p.archived ? 'Unarchive' : 'Archive') + '</button>' +
+    '<button class="btn danger" type="button" data-act="delete-product" data-id="' + esc(p.id) + '">Delete</button>' +
+  '</div>';
+
+  html += '<h2 class="sec">Price history · ' + h.length + ' entr' + (h.length === 1 ? 'y' : 'ies') + '</h2>';
+  html += '<div class="hist">' + h.map(function(e, i){
+    var prev = h[i+1];
+    var d = '';
+    if (prev && prev.price){
+      var pct = ((e.price - prev.price) / prev.price) * 100;
+      d = Math.abs(pct) < 0.05
+        ? '<span class="delta flat">— same</span>'
+        : '<span class="delta ' + (pct < 0 ? 'down' : 'up') + '">' + (pct < 0 ? '▼' : '▲') + ' ' + Math.abs(pct).toFixed(1) + '%</span>';
+    }
+    var tags = '';
+    if (e.purchased) tags += '<span class="chip buy">Purchased</span>';
+    if (e.purchased) tags += '<span class="chip age">' + esc(ageText(e)) + ' old</span>';
+    var st = expStatus(e);
+    if (st) tags += '<span class="chip ' + st.cls + '">' + esc(st.text) + '</span>';
+    if (e.platform && e.platform !== p.platform) tags += '<span class="chip">' + esc(e.platform) + '</span>';
+    if (e.discount) tags += '<span class="chip">' + esc(e.discount) + '</span>';
+    return '<div class="hentry">' +
+      '<div class="grow"><div class="hd">' + esc(fmtEntryDate(e)) + '</div>' +
+        (tags ? '<div class="tags">' + tags + '</div>' : '') + '</div>' +
+      '<div style="text-align:right"><div class="hp">' + money(e.price) + '</div>' + d + '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+
+  app.innerHTML = html;
+}
+
+/* --- SVG chart (no libraries) --- */
+function chartSVG(p){
+  var h = asc(p);
+  var W = 320, H = 180, L = 52, R = 12, T = 16, B = 30;
+  if (!h.length) return '<div class="empty" style="border:0;background:none">No price entries yet.</div>';
+
+  var prices = h.map(function(e){ return e.price; });
+  var min = Math.min.apply(null, prices), max = Math.max.apply(null, prices);
+  var pad = (max - min) === 0 ? (Math.abs(max) * 0.1 || 1) : (max - min) * 0.12;
+  var lo = min - pad, hi = max + pad;
+
+  var times = h.map(function(e){ var t = new Date(e.date).getTime(); return isNaN(t) ? 0 : t; });
+  var tMin = Math.min.apply(null, times), tMax = Math.max.apply(null, times);
+  var spanT = tMax - tMin;
+
+  function X(i){
+    if (h.length === 1) return (L + W - R) / 2;
+    if (spanT === 0) return L + (W - L - R) * (i / (h.length - 1));
+    return L + (W - L - R) * ((times[i] - tMin) / spanT);
+  }
+  function Y(v){ return T + (H - T - B) * (1 - (v - lo) / (hi - lo)); }
+  function n(x){ return Math.round(x * 100) / 100; }
+
+  var s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Price over time">';
+
+  /* gridlines + y labels */
+  [max, (max + min) / 2, min].forEach(function(v){
+    var y = n(Y(v));
+    s += '<line x1="' + L + '" y1="' + y + '" x2="' + (W - R) + '" y2="' + y + '" stroke="var(--line)" stroke-width="1"/>';
+    s += '<text x="' + (L - 6) + '" y="' + (y + 3.5) + '" text-anchor="end" font-size="9" fill="var(--muted)">' + esc(money(v)) + '</text>';
+  });
+
+  /* area + line */
+  var pts = h.map(function(e, i){ return n(X(i)) + ',' + n(Y(e.price)); }).join(' ');
+  if (h.length > 1){
+    s += '<polygon points="' + n(X(0)) + ',' + n(H - B) + ' ' + pts + ' ' + n(X(h.length - 1)) + ',' + n(H - B) +
+         '" fill="var(--accent)" opacity="0.10"/>';
+    s += '<polyline points="' + pts + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+  }
+
+  /* points */
+  h.forEach(function(e, i){
+    var cx = n(X(i)), cy = n(Y(e.price));
+    var color = e.price === min ? 'var(--down)' : (e.price === max ? 'var(--up)' : 'var(--accent)');
+    s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (e.purchased ? 4.5 : 3) + '" fill="' + color + '"' +
+         (e.purchased ? ' stroke="var(--card)" stroke-width="1.5"' : '') + '>' +
+         '<title>' + esc(fmtDate(e.date) + ' · ' + money(e.price) + (e.purchased ? ' (purchased)' : '')) + '</title></circle>';
+  });
+
+  /* axes + x labels */
+  s += '<line x1="' + L + '" y1="' + (H - B) + '" x2="' + (W - R) + '" y2="' + (H - B) + '" stroke="var(--line)" stroke-width="1"/>';
+  s += '<text x="' + L + '" y="' + (H - B + 15) + '" font-size="9" fill="var(--muted)">' + esc(fmtDate(h[0].date)) + '</text>';
+  if (h.length > 1){
+    s += '<text x="' + (W - R) + '" y="' + (H - B + 15) + '" text-anchor="end" font-size="9" fill="var(--muted)">' +
+         esc(fmtDate(h[h.length - 1].date)) + '</text>';
+  }
+  s += '</svg>';
+  return s;
+}
+
+/* ---------------- modals ---------------- */
+var modalRoot = document.getElementById('modal-root');
+
+function closeModal(){ modalRoot.innerHTML = ''; }
+
+function openSheet(titleText, bodyHTML, submitLabel, onSubmit){
+  modalRoot.innerHTML =
+    '<div class="backdrop" data-close="1"><form class="sheet" id="sheet" novalidate>' +
+      '<h3>' + esc(titleText) + '</h3>' +
+      '<div class="err" id="err"></div>' +
+      bodyHTML +
+      '<div class="sheet-actions">' +
+        '<button class="btn" type="button" data-close="1">Cancel</button>' +
+        '<button class="btn primary" type="submit">' + esc(submitLabel) + '</button>' +
+      '</div>' +
+    '</form></div>';
+
+  modalRoot.querySelector('.backdrop').addEventListener('click', function(ev){
+    if (ev.target.getAttribute('data-close')) closeModal();
+  });
+  modalRoot.querySelector('#sheet').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var err = onSubmit(new FormData(ev.target), ev.target);
+    if (err){ var box = document.getElementById('err'); box.textContent = err; box.style.display = 'block'; }
+  });
+  var first = modalRoot.querySelector('input, select, textarea');
+  if (first && window.matchMedia('(min-width:600px)').matches) first.focus();
+}
+
+function confirmSheet(titleText, message, confirmLabel, onYes){
+  modalRoot.innerHTML =
+    '<div class="backdrop" data-close="1"><div class="sheet">' +
+      '<h3>' + esc(titleText) + '</h3>' +
+      '<p class="muted" style="margin-top:0">' + esc(message) + '</p>' +
+      '<div class="sheet-actions">' +
+        '<button class="btn" type="button" data-close="1">Cancel</button>' +
+        '<button class="btn danger" type="button" id="yes">' + esc(confirmLabel) + '</button>' +
+      '</div>' +
+    '</div></div>';
+  modalRoot.querySelector('.backdrop').addEventListener('click', function(ev){
+    if (ev.target.getAttribute('data-close')) closeModal();
+  });
+  modalRoot.querySelector('#yes').addEventListener('click', function(){ closeModal(); onYes(); });
+}
+
+function categoryField(selected){
+  var cats = categories();
+  var options = cats.map(function(c){
+    return '<option value="' + esc(c) + '"' + (c === selected ? ' selected' : '') + '>' + esc(c) + '</option>';
+  }).join('');
+  return '<label class="f">Category' +
+      '<span class="ctl"><select name="categorySelect" id="categorySelect">' + options +
+      '<option value="__new__"' + (cats.length && selected ? '' : ' selected') + '>＋ Add new category…</option>' +
+      '</select></span></label>' +
+    '<label class="f" id="newCatWrap" style="display:none">New category name' +
+      '<span class="ctl"><input type="text" name="categoryNew" id="categoryNew" placeholder="e.g. Headphones" autocomplete="off"></span></label>';
+}
+function wireCategoryField(){
+  var sel = document.getElementById('categorySelect');
+  var wrap = document.getElementById('newCatWrap');
+  if (!sel || !wrap) return;
+  function sync(){ wrap.style.display = sel.value === '__new__' ? 'block' : 'none'; }
+  sel.addEventListener('change', sync);
+  sync();
+}
+function readCategory(fd){
+  var v = String(fd.get('categorySelect') || '');
+  if (v === '__new__') v = String(fd.get('categoryNew') || '').trim();
+  return v.trim();
+}
+function num(fd, key){
+  var raw = String(fd.get(key) || '').trim().replace(/,/g, '');
+  if (!raw) return NaN;
+  return Number(raw);
+}
+
+/* Date block shared by the add and log-price sheets: exact date + optional time,
+   or an approximate month/year when the exact day isn't remembered. */
+function dateFields(){
+  var now = new Date(), thisYear = now.getFullYear();
+  var months = MONTHS.map(function(m, i){
+    return '<option value="' + (i + 1) + '"' + (i === now.getMonth() ? ' selected' : '') + '>' + esc(m) + '</option>';
+  }).join('');
+  var years = '';
+  for (var y = thisYear; y >= thisYear - 30; y--){
+    years += '<option value="' + y + '"' + (y === thisYear ? ' selected' : '') + '>' + y + '</option>';
+  }
+  return '<label class="check"><input type="checkbox" name="dateApprox" id="dateApprox"> I don’t remember the exact date</label>' +
+    '<div id="exactWrap">' +
+      '<label class="f">Date<span class="ctl"><input type="date" name="date" value="' + todayInputValue() + '"></span></label>' +
+      '<label class="f">Time (optional)<span class="ctl"><input type="time" name="time"></span></label>' +
+    '</div>' +
+    '<div id="approxWrap" style="display:none">' +
+      '<label class="f">Roughly when?<span class="ctl" style="display:flex;gap:8px">' +
+        '<select name="approxMonth">' + months + '</select>' +
+        '<select name="approxYear" style="max-width:130px">' + years + '</select>' +
+      '</span></label>' +
+    '</div>' +
+    '<label class="f">Expiration date (optional)<span class="ctl"><input type="date" name="expirationDate"></span></label>';
+}
+function wireDateFields(){
+  var cb = document.getElementById('dateApprox');
+  if (!cb) return;
+  function sync(){
+    document.getElementById('exactWrap').style.display = cb.checked ? 'none' : 'block';
+    document.getElementById('approxWrap').style.display = cb.checked ? 'block' : 'none';
+  }
+  cb.addEventListener('change', sync);
+  sync();
+}
+function readDateFields(fd){
+  var approx = !!fd.get('dateApprox');
+  var out = { dateApprox: approx, approxMonth: 0, approxYear: 0, time: '', expirationDate: '' };
+  if (approx){
+    var m = Number(fd.get('approxMonth')) || (new Date().getMonth() + 1);
+    var y = Number(fd.get('approxYear')) || new Date().getFullYear();
+    out.approxMonth = m;
+    out.approxYear = y;
+    out.date = new Date(y, m - 1, 1, 12, 0, 0).toISOString();   /* 1st of the month, for sorting and age only */
+  } else {
+    out.date = isoFromInput(String(fd.get('date') || ''));
+    out.time = String(fd.get('time') || '').trim();
+  }
+  var exp = String(fd.get('expirationDate') || '').trim();
+  if (exp) out.expirationDate = isoFromInput(exp);
+  return out;
+}
+
+/* --- add product --- */
+function addProductSheet(prefillCategory){
+  openSheet('Add product',
+    '<label class="f">Name<span class="ctl"><input type="text" name="name" autocomplete="off" placeholder="e.g. Sony WH-1000XM5"></span></label>' +
+    categoryField(prefillCategory || '') +
+    '<label class="f">Current price (฿)<span class="ctl"><input type="number" name="price" inputmode="decimal" step="0.01" min="0" placeholder="0.00"></span></label>' +
+    '<label class="f">Platform<span class="ctl"><input type="text" name="platform" autocomplete="off" placeholder="e.g. Lazada"></span></label>' +
+    dateFields() +
+    '<label class="f">Coupon / discount (optional)<span class="ctl"><input type="text" name="discount" autocomplete="off" placeholder="e.g. SAVE10 or 15% off"></span></label>' +
+    '<label class="check"><input type="checkbox" name="purchased"> I purchased this</label>' +
+    '<label class="f">Note (optional)<span class="ctl"><textarea name="note" placeholder="Anything worth remembering…"></textarea></span></label>',
+    'Add product',
+    function(fd){
+      var name = String(fd.get('name') || '').trim();
+      var category = readCategory(fd);
+      var price = num(fd, 'price');
+      var platform = String(fd.get('platform') || '').trim();
+      if (!name) return 'Name is required.';
+      if (!category) return 'Category is required.';
+      if (!isFinite(price) || price < 0) return 'Enter a valid price.';
+      if (!platform) return 'Platform is required.';
+
+      var df = readDateFields(fd);
+      var product = {
+        id: uid(), name: name, category: category, platform: platform,
+        note: String(fd.get('note') || '').trim(),
+        archived: false, createdAt: new Date().toISOString(),
+        priceHistory: [{
+          price: price, date: df.date,
+          discount: String(fd.get('discount') || '').trim(),
+          platform: '', purchased: !!fd.get('purchased'),
+          dateApprox: df.dateApprox, approxMonth: df.approxMonth, approxYear: df.approxYear,
+          time: df.time, expirationDate: df.expirationDate
+        }]
+      };
+      state.products.push(product);
+      save(); closeModal();
+      view = { name:'product', id: product.id };
+      render();
+    });
+  wireCategoryField();
+  wireDateFields();
+}
+
+/* --- log price --- */
+function logPriceSheet(id){
+  var p = byId(id); if (!p) return;
+  openSheet('Log new price — ' + p.name,
+    '<label class="f">Price (฿)<span class="ctl"><input type="number" name="price" inputmode="decimal" step="0.01" min="0" placeholder="0.00"></span></label>' +
+    dateFields() +
+    '<label class="f">Platform<span class="ctl"><input type="text" name="platform" autocomplete="off" value="' + esc(p.platform) + '"></span></label>' +
+    '<label class="f">Coupon / discount (optional)<span class="ctl"><input type="text" name="discount" autocomplete="off" placeholder="e.g. SAVE10 or 15% off"></span></label>' +
+    '<label class="check"><input type="checkbox" name="purchased"> I purchased this</label>',
+    'Save entry',
+    function(fd){
+      var price = num(fd, 'price');
+      if (!isFinite(price) || price < 0) return 'Enter a valid price.';
+      var platform = String(fd.get('platform') || '').trim();
+      var df = readDateFields(fd);
+      p.priceHistory.push({
+        price: price,
+        date: df.date,
+        discount: String(fd.get('discount') || '').trim(),
+        platform: (platform && platform !== p.platform) ? platform : '',
+        purchased: !!fd.get('purchased'),
+        dateApprox: df.dateApprox, approxMonth: df.approxMonth, approxYear: df.approxYear,
+        time: df.time, expirationDate: df.expirationDate
+      });
+      save(); closeModal(); render();
+    });
+  wireDateFields();
+}
+
+/* --- edit product --- */
+function editProductSheet(id){
+  var p = byId(id); if (!p) return;
+  openSheet('Edit product',
+    '<label class="f">Name<span class="ctl"><input type="text" name="name" autocomplete="off" value="' + esc(p.name) + '"></span></label>' +
+    categoryField(p.category) +
+    '<label class="f">Platform<span class="ctl"><input type="text" name="platform" autocomplete="off" value="' + esc(p.platform) + '"></span></label>' +
+    '<label class="f">Note<span class="ctl"><textarea name="note">' + esc(p.note) + '</textarea></span></label>',
+    'Save changes',
+    function(fd){
+      var name = String(fd.get('name') || '').trim();
+      var category = readCategory(fd);
+      var platform = String(fd.get('platform') || '').trim();
+      if (!name) return 'Name is required.';
+      if (!category) return 'Category is required.';
+      if (!platform) return 'Platform is required.';
+      p.name = name; p.category = category; p.platform = platform;
+      p.note = String(fd.get('note') || '').trim();
+      save(); closeModal(); render();
+    });
+  wireCategoryField();
+}
+
+/* --- data (export / import) --- */
+function dataSheet(){
+  modalRoot.innerHTML =
+    '<div class="backdrop" data-close="1"><div class="sheet">' +
+      '<h3>Backup</h3>' +
+      '<p class="muted" style="margin-top:0">Everything lives in this browser’s local storage. Export a JSON copy so a cleared browser doesn’t take your history with it.</p>' +
+      '<button class="btn full" type="button" id="export" style="margin-bottom:8px">Export JSON</button>' +
+      '<button class="btn full" type="button" id="importBtn" style="margin-bottom:8px">Import JSON…</button>' +
+      '<input type="file" id="importFile" accept="application/json,.json" style="display:none">' +
+      '<div class="sheet-actions"><button class="btn" type="button" data-close="1">Close</button></div>' +
+    '</div></div>';
+
+  modalRoot.querySelector('.backdrop').addEventListener('click', function(ev){
+    if (ev.target.getAttribute('data-close')) closeModal();
+  });
+  document.getElementById('export').addEventListener('click', function(){
+    var blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'price-tracker-' + todayInputValue() + '.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  });
+  var file = document.getElementById('importFile');
+  document.getElementById('importBtn').addEventListener('click', function(){ file.click(); });
+  file.addEventListener('change', function(){
+    var f = file.files && file.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      var data;
+      try { data = JSON.parse(String(reader.result)); }
+      catch (e) { alert('That file isn’t valid JSON.'); return; }
+      if (!data || !Array.isArray(data.products)) { alert('That file doesn’t look like a Price Tracker backup.'); return; }
+      var count = data.products.length;
+      confirmSheet('Replace all data?',
+        'Importing will replace your current ' + state.products.length + ' product(s) with ' + count + ' from the file.',
+        'Replace', function(){
+          state = normalize(data);
+          save(); closeModal();
+          view = {name:'dashboard'}; search = '';
+          render();
+        });
+    };
+    reader.readAsText(f);
+  });
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener('click', function(ev){
+  var el = ev.target.closest ? ev.target.closest('[data-act]') : null;
+  if (!el) return;
+  var act = el.getAttribute('data-act');
+  var id = el.getAttribute('data-id');
+
+  if (act === 'home'){ view = {name:'dashboard'}; search = ''; render(); }
+  else if (act === 'open-category'){ view = {name:'category', category: el.getAttribute('data-cat')}; render(); }
+  else if (act === 'open-product'){ view = {name:'product', id: id, from: view.name}; render(); }
+  else if (act === 'owned-view'){ view = {name:'owned'}; render(); }
+  else if (act === 'archived-view'){ view = {name:'archived'}; render(); }
+  else if (act === 'add-product'){ addProductSheet(view.name === 'category' ? view.category : ''); }
+  else if (act === 'log-price'){ logPriceSheet(id); }
+  else if (act === 'edit-product'){ editProductSheet(id); }
+  else if (act === 'data-menu'){ dataSheet(); }
+  else if (act === 'toggle-archive'){
+    var p = byId(id); if (!p) return;
+    p.archived = !p.archived; save(); render();
+  }
+  else if (act === 'delete-product'){
+    var d = byId(id); if (!d) return;
+    confirmSheet('Delete product?', '“' + d.name + '” and all ' + d.priceHistory.length + ' price entr' +
+      (d.priceHistory.length === 1 ? 'y' : 'ies') + ' will be permanently removed. This cannot be undone.',
+      'Delete', function(){
+        state.products = state.products.filter(function(x){ return x.id !== id; });
+        save(); view = {name:'dashboard'}; render();
+      });
+  }
+});
+document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') closeModal(); });
+
+load();
+render();
+})();
+</script>
+</body>
+</html>
