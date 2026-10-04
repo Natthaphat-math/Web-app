@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Limit Pace</title>
+<!-- installed to a home screen: its own name, icon and status-bar colour, not a
+     screenshot of the page and Safari's chrome -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Limit Pace">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#EFF1F0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1211" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAF2klEQVR4nOzdS2xUVRzH8TN0+mDaQlso0KEvqG2kwbY8io+IMQWNiUTUSDCGmigmLpBgXLqRnQnp2kQTxRhiCRoWEKMQjYRYFmAo4VUJkIJ9TJl2+oil7854hYQN/AzQuaede7+fzGIWTZOZfNs7c86Z/wSzdzUa4EGCBhCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBaXbiqCsp31Kzdn15RW1xWWHuApOa+ob/udzdeTnSebr9Wntf1CTbxPTU8NjY8PjY0OjI2OSksS6QvavRWJQZTP/8zXd2bmxICwSMV8QTiebTLftbfp+Ox40LEsZEBge6BvuNXWkZG2qNLevLV/6y59NNq1bP81AZjkAgUFNc+uzKqraerv7bwybZnCcrN2t+fij79vj45PS0sWWesSUnM/PAzt1liwqNR1UuLdr72rbgPLee0lBG5hNLlgYs/l3Zi2PfW43F+YuMpy3PK3j/+QbjGueiHF6Yb2yxFMeLVdU7ntlofGB7/XOrwyXGNeG8/JzMLGOFpTg+anjFY68zFOdhbqldZ9xk7f2dpbeyFYVLjW+UFiw2bspKTzdWWIqjKM/elXLWuR9HhrHC0mVlYmrK+IazeGXcFE+4sppyP0tx/NXTbXzjWrTHuGl0YsJYYSmOi10dxjfcjsNZCjNWWIrj6z9+88mVxVnB/On8WeOaxJ09HWOFpTgudXd+efJX4wPftpxwdROkcyA2PmVpE87eCuneoz+0RbqMp129FTl4psW4ZmRivGdo0NhiL47xycndzd+4tG85FzgPbd+xI84OrXGH83vb+3qNRVZ3ZTsH+puOHXV2F9eUrfTSgqkTxMEzpz459F3MnVcDd7fsr/R029ySNfbPc9xVV1L+as3aeg77/C/fHfZBCuEMKSTigEQckIgDEnFAIg5IxAGJOCARByTigEQckIjDhsoly5q2NW5YUdna0b6nef9Vl88RJou98xx+9sWODzateio3K+uFylVfvfuhSRH857BhbemKe/driktNiiAOGzKD6Q+8P8cRByTigEQckIgD0uzEUbasaE1VZVk4HF5SmB0KGW8ZGR3t7evvjcW6IrcGh4bu/4H68oqH+T2zfsDYdhzBtOD2zZufrqvx8CyX0Pz5ZSXLndu62sSFtivnLl4yjyUjLViQnePcZmuaoNU4KsLh97ZuzVuYqp9FeFT/TRmsfnJ50UwH1wTuTHvKC4Xa+3pHJix9itrYXCHNysjY+cbr/injnkX5yRlc4+Vpgm+/9PKC3FyDGfDmNMHq8hXrVlcbzJgHpwk21K8P+GOaoAVemya4ON9HA+Pc5rVpgrk52QZJYm2aoKU4pu3ODvA2r00TjPYPGCSJ16YJRqJWR9J4m9emCZ5sPcuVJSk8OE2wIxo91XrOYMa8OU3w8IkT0VjMYAY8O01wcmqq+edj8bhbw/bmrGQ9ZPvTBK1+NOFqZ8fHTU2nzra6N49xTkkkEhfbrhz48bCZGefJ6h4c+PPGdZtbssb+eY54PP798eMt5y/UVVWW+/Wwz0Py3WGfu272RJyb8aszN66bVMAZUkjEAYk4IBEHJOKAxAgGG1r/br93/3Kk06QIq1+p4Vs3Y70lBYvzQzlOJZ8dOWR5ofOx8a0JkHjNAYk4IBEHJOKARByQiAMScUAiDkjEAYk4IBEHJOKARByQiAMScUAiDkjEAYk4IBEHJOKARByQiAMScUAiDkjEAYk4IBEHJOKARByQiAMScUAiDkjEAYk4IBEHJOKARByQiAMScUAiDkjEAYk4IBEHJOKARByQiAMScUAiDkjEAYk4IBEHJOKARByQ/gUAAP//3RCS/AAAAAZJREFUAwDNG8PtHFoLbAAAAABJRU5ErkJggg==">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -52,7 +62,7 @@ html,body{margin:0}
 body{
   background:var(--bg); color:var(--ink); font-family:var(--sans);
   font-size:15px; line-height:1.5;
-  padding:18px 14px calc(56px + env(safe-area-inset-bottom));
+  padding:18px 14px calc(56px + var(--bar-h,0px) + env(safe-area-inset-bottom));
   -webkit-text-size-adjust:100%;
 }
 .wrap{max-width:1060px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
@@ -309,14 +319,17 @@ input[type=range]::-moz-range-thumb{
 .day-rows li:first-child{border-top:0}
 .h-time{color:var(--ink-2);grid-column:1;grid-row:1}
 .rows .chip{grid-column:2;grid-row:1;justify-self:end}
-.rows .del{grid-column:3;grid-row:1}
-.h-main{color:var(--ink);font-weight:500;grid-column:1/-1;grid-row:2;font-size:11.5px}
+.rows .del{grid-column:3;grid-row:1 / span 2;align-self:center}
+.h-main{color:var(--ink);font-weight:500;grid-column:1/3;grid-row:2;font-size:11.5px}
 .h-main em{font-style:normal;color:var(--ink-3);font-weight:400}
 .del{
-  border:0;background:transparent;color:var(--ink-3);font-size:15px;line-height:1;padding:3px 5px;
-  border-radius:6px;font-family:var(--sans);
+  border:0;background:transparent;color:var(--ink-3);font-size:18px;line-height:1;padding:0;
+  min-width:40px;min-height:40px;display:grid;place-items:center;
+  border-radius:9px;font-family:var(--sans);
 }
-.del:hover{color:var(--hot);background:var(--hot-soft)}
+/* hover-only devices: on iOS a tapped element keeps :hover, so after a delete the next
+   row's × would sit there looking armed */
+@media (hover:hover){.del:hover{color:var(--hot);background:var(--hot-soft)}}
 .more{align-self:flex-start;margin-top:9px;font-size:12px;color:var(--accent);background:none;border:0;padding:4px 0;font-weight:500}
 
 /* ---- dialog ---- */
@@ -355,10 +368,31 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
 
 /* ---- toast ---- */
 .toast{
-  position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:50;
+  /* centred with auto margins, not left:50% + translate — that sizes the box to the
+     right half of the screen and wraps even a two-word message */
+  position:fixed;left:0;right:0;margin:0 auto;width:fit-content;
+  bottom:calc(22px + var(--bar-h,0px) + env(safe-area-inset-bottom));z-index:50;
   background:var(--ink);color:var(--bg);font-size:13px;padding:11px 15px;border-radius:10px;
   box-shadow:0 10px 30px -10px rgba(0,0,0,.5);max-width:min(420px,calc(100% - 28px));
   text-align:center;line-height:1.4;
+  display:flex;align-items:center;gap:14px;
+}
+.logbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  display:grid;grid-template-columns:1fr 1fr;gap:9px;
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  background:color-mix(in srgb,var(--bg) 86%,transparent);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border-top:1px solid var(--hair);
+}
+.logbar .btn{padding:13px 10px;font-size:15px;border-radius:11px}
+/* side by side at desktop width both cards' own buttons are in reach already */
+@media(min-width:900px){.logbar{display:none}}
+@media(max-width:899px){body.has-bar{--bar-h:72px}}
+.logform{scroll-margin-top:14px}
+.toast-act{
+  border:0;background:none;padding:6px 2px;font:inherit;font-weight:700;
+  color:var(--accent-soft);text-decoration:underline;text-underline-offset:2px;white-space:nowrap;
 }
 .foot{color:var(--ink-3);font-size:11.5px;text-align:center;line-height:1.6}
 .foot code{font-family:var(--mono);font-size:11px}
@@ -399,6 +433,11 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
 
   <p class="foot">Everything stays in this browser's <code>localStorage</code>. Export regularly if it matters.</p>
 </div>
+
+<nav class="logbar" id="logbar" aria-label="Log a reading" hidden>
+  <button type="button" class="btn primary" data-log="session">Log session</button>
+  <button type="button" class="btn" data-log="weekly">Log weekly</button>
+</nav>
 
 <dialog id="settings-dlg">
   <div class="dlg-head">
@@ -966,6 +1005,7 @@ var SPARK_RAW_LIMIT = 60;   /* past this many readings the sparkline plots one p
 
 function render(){
   KEYS.forEach(renderPanel);
+  updateLogBar();
   document.getElementById("sample-banner").hidden = !state.sample;
 }
 
@@ -1114,7 +1154,7 @@ function renderHistory(key, panel, t){
       var cls = paceClass(p);
       var pl = (p === null || !isFinite(p)) ? "n/a" : p.toFixed(2) + "×";
       return '<li>' +
-        '<span class="h-time">' + esc(fmtWhen(new Date(e.timestamp))) + '</span>' +
+        '<span class="h-time">' + esc(fmtClock(new Date(e.timestamp))) + '</span>' +   /* the day heading already says which day */
         '<span class="h-main">' + esc(e.percent_used) + '% <em>used · ' + esc(fmtDuration(e.time_until_reset_minutes)) + ' left · reset ' + esc(fmtClock(new Date(e.computed_reset_time))) + '</em></span>' +
         '<span class="chip small ' + cls + '">' + pl + '</span>' +
         '<button class="del" data-act="del" data-ts="' + esc(e.timestamp) + '" title="Delete this reading" aria-label="Delete reading from ' + esc(fmtWhen(new Date(e.timestamp))) + '">×</button>' +
@@ -1295,7 +1335,7 @@ function applyTimeFold(panel, key){
   summary.hidden = !!timeOpen[key];
 }
 
-function openForm(panel){
+function openForm(panel, opts){
   var key = panel.getAttribute("data-key");
   var t = state.trackers[key];
   var s = stats(t);
@@ -1325,11 +1365,25 @@ function openForm(panel){
   form.hidden = false;
   btn.hidden = true;
   syncForm(panel);
-  form.scrollIntoView({behavior:"smooth", block:"nearest"});
+  updateLogBar();
+  form.scrollIntoView({behavior:"smooth", block:(opts && opts.jump) ? "start" : "nearest"});
 }
 function closeForm(panel){
   panel.querySelector('[data-slot="form"]').hidden = true;
   panel.querySelector('[data-act="open-form"]').hidden = false;
+  updateLogBar();
+}
+
+/* The weekly card's own button sits a couple of screens down on a phone, below the
+   whole session history, so both log actions also live in a bar pinned to the bottom.
+   It steps aside while any form is open: it would cover Save, and on iOS a fixed bar
+   rides up on top of the keyboard. */
+function updateLogBar(){
+  var bar = document.getElementById("logbar");
+  if(!bar) return;
+  var open = !!document.querySelector('.logform:not([hidden])');
+  bar.hidden = open;
+  document.body.classList.toggle("has-bar", !open);
 }
 
 function submitEntry(panel){
@@ -1630,12 +1684,12 @@ function applyRemote(remote){
 
 /* ---- writing ---- */
 function syncPush(immediate){
-  if(!sync.user || state.sample) return;
+  if(!sync.user || state.sample || pendingDel) return;   /* commitPendingDelete() pushes when the window closes */
   clearTimeout(sync.pushTimer);
   sync.pushTimer = setTimeout(pushNow, immediate ? 200 : 1500);
 }
 function pushNow(){
-  if(!sync.user || state.sample) return;
+  if(!sync.user || state.sample || pendingDel) return;
   var payload = JSON.stringify(syncPayload());
   if(payload.length > PAYLOAD_MAX){
     syncMsg("Too much history to sync (" + Math.round(payload.length/1024) + " KB). Export and trim the oldest readings.", true);
@@ -1841,15 +1895,81 @@ function syncBoot(){
 /* ---------------- toast ---------------- */
 
 var toastTimer = null, toastEl = null;
-function toast(msg){
+function toast(msg, action){
   if(toastEl) toastEl.remove();
   toastEl = document.createElement("div");
   toastEl.className = "toast";
   toastEl.setAttribute("role","status");
-  toastEl.textContent = msg;
+  var text = document.createElement("span");
+  text.textContent = msg;
+  toastEl.appendChild(text);
+  if(action){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "toast-act";
+    b.textContent = action.label;
+    b.addEventListener("click", action.run);
+    toastEl.appendChild(b);
+  }
   document.body.appendChild(toastEl);
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(function(){ if(toastEl){ toastEl.remove(); toastEl = null; } }, 5200);
+  toastTimer = setTimeout(function(){ if(toastEl){ toastEl.remove(); toastEl = null; } }, action ? UNDO_MS : 5200);
+}
+
+/* ---------------- delete, with undo ----------------
+
+   A delete applies locally at once, but its tombstone doesn't reach the cloud until
+   the undo window closes. That is the only undo that works with sync: tombstones only
+   ever grow, so once another device has merged one it pushes it straight back, and an
+   undo of an already-synced delete would be silently reversed. Within the window the
+   delete has never left this device, so undoing it is exact. */
+var UNDO_MS = 5000;
+var pendingDel = null;   /* { key, entry, timer } */
+
+function deleteReading(key, ts){
+  commitPendingDelete();                /* one undo at a time: an earlier delete is final now */
+  var t = state.trackers[key];
+  var entry = null;
+  t.history = t.history.filter(function(e){
+    if(e.timestamp === ts){ entry = e; return false; }
+    return true;
+  });
+  if(!entry) return;
+  t.deleted = pruneStamps((t.deleted || []).concat([ts]));   /* so the delete survives a merge */
+  reconcileCurrent(t);
+  save({push:false});
+  render();
+  pendingDel = { key:key, entry:entry, timer:setTimeout(commitPendingDelete, UNDO_MS) };
+  toast("Reading deleted.", { label:"Undo", run:undoDelete });
+}
+
+function commitPendingDelete(){
+  if(!pendingDel) return;
+  clearTimeout(pendingDel.timer);
+  pendingDel = null;
+  syncPush(false);                      /* also carries anything else held back in the window */
+}
+
+/* the exact inverse of the delete — not a snapshot restore, so a remote merge or a new
+   reading that landed during the window isn't thrown away with it */
+function undoDelete(){
+  if(!pendingDel) return;
+  var p = pendingDel;
+  clearTimeout(p.timer);
+  pendingDel = null;
+  var t = state.trackers[p.key];
+  t.deleted = (t.deleted || []).filter(function(x){ return x !== p.entry.timestamp; });
+  if(!t.history.some(function(e){ return e.timestamp === p.entry.timestamp; })){
+    t.history = sortHistory(t.history.concat([p.entry]));
+  }
+  if(!t.last_logged_at || new Date(p.entry.timestamp) > new Date(t.last_logged_at)){
+    t.last_logged_at = p.entry.timestamp;
+    t.time_until_reset_minutes = p.entry.time_until_reset_minutes;
+    t.percent_used = p.entry.percent_used;
+  }
+  save();                               /* pushes anything else that was held back */
+  render();
+  toast("Reading restored.");
 }
 
 /* ---------------- wiring ---------------- */
@@ -1920,14 +2040,14 @@ grid.addEventListener("click", function(ev){
     dayOpen[dk][btn.getAttribute("data-day")] = !wasOpen;
     renderHistory(dk, panel, state.trackers[dk]);
   } else if(act === "del"){
-    var ts = btn.getAttribute("data-ts");
-    var key = panel.getAttribute("data-key");
-    var t = state.trackers[key];
-    t.history = t.history.filter(function(e){ return e.timestamp !== ts; });
-    t.deleted = pruneStamps((t.deleted || []).concat([ts]));   /* so the delete survives a merge */
-    reconcileCurrent(t);
-    save(); render(); toast("Reading deleted.");
+    deleteReading(panel.getAttribute("data-key"), btn.getAttribute("data-ts"));
   }
+});
+document.getElementById("logbar").addEventListener("click", function(ev){
+  var b = ev.target.closest("[data-log]");
+  if(!b) return;
+  var panel = document.querySelector('.panel[data-key="' + b.getAttribute("data-log") + '"]');
+  if(panel) openForm(panel, { jump:true });
 });
 grid.addEventListener("submit", function(ev){
   ev.preventDefault();
@@ -1977,9 +2097,13 @@ dlg.addEventListener("change", function(ev){
 });
 document.getElementById("btn-wipe").addEventListener("click", function(){
   if(!confirm("Delete every logged reading and reset the settings? This can't be undone.")) return;
+  commitPendingDelete();
   var graves = {};
   KEYS.forEach(function(k){
-    graves[k] = state.sample ? [] : state.trackers[k].history.map(function(e){ return e.timestamp; });
+    /* earlier deletions' tombstones too, or a device that still has those readings
+       hands them straight back after the wipe */
+    graves[k] = state.sample ? [] : state.trackers[k].history.map(function(e){ return e.timestamp; })
+      .concat(state.trackers[k].deleted || []);
   });
   state = defaultState();
   KEYS.forEach(function(k){ state.trackers[k].deleted = pruneStamps(graves[k]); });
