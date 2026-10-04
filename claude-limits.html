@@ -29,36 +29,45 @@
   --warm:#B07A0B; --warm-soft:#F5E8CC;
   --hot:#B03826; --hot-soft:#F6DDD8;
   --track:#DDE3E1; --shadow:0 1px 2px rgba(16,22,21,.05),0 6px 18px -12px rgba(16,22,21,.28);
+  --primary-bg:var(--accent); --primary-ink:var(--accent-ink); --sunk-edge:transparent;
+  --toast-bg:var(--ink); --toast-ink:var(--bg); --toast-edge:transparent; --toast-act:var(--accent-soft);
   --sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif;
   --display:'Archivo','Helvetica Neue',Arial,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   color-scheme:light;
 }
-/* Dark is true black: #000 background switches OLED pixels off entirely. Cards sit one
-   step above it so they still read as surfaces, and since no shadow can show on black,
-   their 1px hairline border does that work instead. */
+/* Dark is true black for OLED screens: page, cards, nested boxes, chips and the
+   "soft" tints are all #000, so those pixels are off. Edges do the work fills do in
+   light — every card and nested box has a hairline border (--sunk-edge gives the
+   log form one here, transparent in light). Primary buttons drop from bright teal to
+   a deep tinted fill with teal text. Only the progress-bar track keeps a faint fill,
+   so a bar's empty part is still visible. */
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#000000; --surface:#0B0F0E; --sunk:#141A19; --hair:#232B29; --hair-soft:#181F1E;
+    --bg:#000000; --surface:#000000; --sunk:#000000; --hair:#2A3331; --hair-soft:#1D2523;
     --ink:#E7EDEB; --ink-2:#9AA8A5; --ink-3:#75827F;
-    --accent:#31BFA6; --accent-ink:#06201C; --accent-soft:#123029;
-    --cool:#74B4D8; --cool-soft:#132734;
-    --neutral-pace:#31BFA6; --neutral-soft:#123029;
-    --warm:#E3A93C; --warm-soft:#33280F;
-    --hot:#E8705C; --hot-soft:#361B16;
-    --track:#1F2725; --shadow:none;
+    --accent:#31BFA6; --accent-ink:#06201C; --accent-soft:#000000;
+    --cool:#74B4D8; --cool-soft:#000000;
+    --neutral-pace:#31BFA6; --neutral-soft:#000000;
+    --warm:#E3A93C; --warm-soft:#000000;
+    --hot:#E8705C; --hot-soft:#000000;
+    --track:#1A2120; --shadow:none;
+    --primary-bg:#0B332C; --primary-ink:#31BFA6; --sunk-edge:var(--hair);
+    --toast-bg:#000000; --toast-ink:var(--ink); --toast-edge:var(--hair); --toast-act:var(--accent);
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#000000; --surface:#0B0F0E; --sunk:#141A19; --hair:#232B29; --hair-soft:#181F1E;
+  --bg:#000000; --surface:#000000; --sunk:#000000; --hair:#2A3331; --hair-soft:#1D2523;
   --ink:#E7EDEB; --ink-2:#9AA8A5; --ink-3:#75827F;
-  --accent:#31BFA6; --accent-ink:#06201C; --accent-soft:#123029;
-  --cool:#74B4D8; --cool-soft:#132734;
-  --neutral-pace:#31BFA6; --neutral-soft:#123029;
-  --warm:#E3A93C; --warm-soft:#33280F;
-  --hot:#E8705C; --hot-soft:#361B16;
-  --track:#1F2725; --shadow:none;
+  --accent:#31BFA6; --accent-ink:#06201C; --accent-soft:#000000;
+  --cool:#74B4D8; --cool-soft:#000000;
+  --neutral-pace:#31BFA6; --neutral-soft:#000000;
+  --warm:#E3A93C; --warm-soft:#000000;
+  --hot:#E8705C; --hot-soft:#000000;
+  --track:#1A2120; --shadow:none;
+  --primary-bg:#0B332C; --primary-ink:#31BFA6; --sunk-edge:var(--hair);
+    --toast-bg:#000000; --toast-ink:var(--ink); --toast-edge:var(--hair); --toast-act:var(--accent);
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -92,7 +101,7 @@ button{font:inherit;cursor:pointer}
 .btn:hover{border-color:var(--ink-3)}
 .btn:active{transform:translateY(1px)}
 .btn.primary{
-  background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600;
+  background:var(--primary-bg);border-color:var(--accent);color:var(--primary-ink);font-weight:600;
 }
 .btn.primary:hover{filter:brightness(1.06)}
 .btn.wide{width:100%;padding:14px;font-size:15px;border-radius:11px}
@@ -197,7 +206,7 @@ button{font:inherit;cursor:pointer}
 .verdict b.hot{color:var(--hot)}
 
 /* ---- form ---- */
-.logform{display:flex;flex-direction:column;gap:16px;background:var(--sunk);border-radius:12px;padding:15px 14px 14px;margin-top:-3px}
+.logform{display:flex;flex-direction:column;gap:16px;background:var(--sunk);box-shadow:inset 0 0 0 1px var(--sunk-edge);border-radius:12px;padding:15px 14px 14px;margin-top:-3px}
 .form-title{margin:0;font-family:var(--display);font-size:14px;font-weight:600;letter-spacing:-.005em}
 .form-title span{display:block;font-family:var(--sans);font-weight:400;font-size:12px;color:var(--ink-2);margin-top:3px}
 /* min-width:0 is load-bearing: a type=text input carries a default min-content
@@ -383,7 +392,8 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
      right half of the screen and wraps even a two-word message */
   position:fixed;left:0;right:0;margin:0 auto;width:fit-content;
   bottom:calc(22px + var(--bar-h,0px) + env(safe-area-inset-bottom));z-index:50;
-  background:var(--ink);color:var(--bg);font-size:13px;padding:11px 15px;border-radius:10px;
+  background:var(--toast-bg);color:var(--toast-ink);border:1px solid var(--toast-edge);
+  font-size:13px;padding:11px 15px;border-radius:10px;
   box-shadow:0 10px 30px -10px rgba(0,0,0,.5);max-width:min(420px,calc(100% - 28px));
   text-align:center;line-height:1.4;
   display:flex;align-items:center;gap:14px;
@@ -403,7 +413,7 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
 .logform{scroll-margin-top:14px}
 .toast-act{
   border:0;background:none;padding:6px 2px;font:inherit;font-weight:700;
-  color:var(--accent-soft);text-decoration:underline;text-underline-offset:2px;white-space:nowrap;
+  color:var(--toast-act);text-decoration:underline;text-underline-offset:2px;white-space:nowrap;
 }
 .foot{color:var(--ink-3);font-size:11.5px;text-align:center;line-height:1.6}
 .foot code{font-family:var(--mono);font-size:11px}
