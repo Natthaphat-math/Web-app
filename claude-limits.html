@@ -92,8 +92,11 @@ button{font:inherit;cursor:pointer}
 .banner strong{font-weight:600}
 
 /* ---- grid ---- */
-.grid{display:grid;gap:18px;grid-template-columns:1fr;align-items:start}
-@media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
+/* minmax(0,1fr), not 1fr — a bare 1fr track won't shrink below its content's
+   min-content size, and a type=text input's default ~20ch intrinsic width (the
+   percent field) is wide enough to push the whole card past the viewport */
+.grid{display:grid;gap:18px;grid-template-columns:minmax(0,1fr);align-items:start}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 
 /* ---- panel ---- */
 .panel{
@@ -178,7 +181,11 @@ button{font:inherit;cursor:pointer}
 .logform{display:flex;flex-direction:column;gap:16px;background:var(--sunk);border-radius:12px;padding:15px 14px 14px;margin-top:-3px}
 .form-title{margin:0;font-family:var(--display);font-size:14px;font-weight:600;letter-spacing:-.005em}
 .form-title span{display:block;font-family:var(--sans);font-weight:400;font-size:12px;color:var(--ink-2);margin-top:3px}
-.field{display:flex;flex-direction:column;gap:1px}
+/* min-width:0 is load-bearing: a type=text input carries a default min-content
+   width (~20ch) that a flex ancestor's intrinsic sizing respects regardless of
+   min-width:0 on the input itself — type=range never had this, which is why the
+   bug showed up only once the percent field stopped being a slider */
+.field{display:flex;flex-direction:column;gap:1px;min-width:0}
 .field-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .field-head label{font-size:12.5px;font-weight:500;color:var(--ink-2)}
 .field-head output{
@@ -210,8 +217,24 @@ button{font:inherit;cursor:pointer}
   background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 45%,transparent);
   color:var(--accent);font-weight:600;
 }
+.pctfield{
+  display:flex;align-items:baseline;gap:7px;min-width:0;box-sizing:border-box;
+  background:var(--sunk);border:1.5px solid var(--hair);border-radius:12px;
+  padding:11px 14px;transition:border-color .15s ease;
+}
+.pctfield:focus-within{border-color:var(--accent)}
+.pctfield input{
+  flex:1 1 auto;min-width:0;border:0;background:transparent;padding:0;margin:0;
+  font:inherit;font-family:var(--mono);font-weight:700;font-size:32px;letter-spacing:-.02em;
+  color:var(--ink);font-variant-numeric:tabular-nums;
+}
+.pctfield input:focus{outline:none}
+.pctfield input::placeholder{color:var(--ink-3);font-weight:600}
+.pctfield .suffix{font-family:var(--mono);font-weight:600;font-size:19px;color:var(--ink-3)}
 .range-note{margin:-3px 0 0;font-size:11.5px;line-height:1.45;color:var(--ink-3)}
 .range-note b{font-family:var(--mono);font-weight:600;color:var(--ink-2)}
+.range-note.warn{color:var(--hot)}
+.range-note.warn b{color:var(--hot)}
 .linkish{
   border:0;background:none;padding:0;font:inherit;color:var(--accent);font-weight:600;
   text-decoration:underline;text-underline-offset:2px;
@@ -263,14 +286,27 @@ input[type=range]::-moz-range-thumb{
 .spark .dot.on{fill:var(--neutral-pace)}
 .spark .dot.over{fill:var(--warm)}
 .spark .dot.hot{fill:var(--hot)}
-.mini-empty{margin:0 0 8px;font-size:12.5px;color:var(--ink-3)}
+.mini-empty,.mini-note{margin:0 0 8px;font-size:12.5px;color:var(--ink-3)}
 .rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
-.rows li{
+.day{border-top:1px solid var(--hair-soft)}
+.day:first-child{border-top:0}
+.day-head{
+  width:100%;display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  background:none;border:0;padding:10px 0;font:inherit;text-align:left;cursor:pointer;
+}
+.day-head:hover .day-date{color:var(--ink)}
+.day-date{
+  font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.02em;
+  color:var(--ink-2);text-transform:uppercase;transition:color .15s ease;
+}
+.day-count{font-family:var(--mono);font-size:11px;color:var(--ink-3);white-space:nowrap}
+.day-rows{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column}
+.day-rows li{
   display:grid;grid-template-columns:1fr auto auto;gap:2px 9px;align-items:center;
-  padding:9px 0;border-top:1px solid var(--hair-soft);font-family:var(--mono);font-size:12px;
+  padding:8px 0 8px 2px;border-top:1px dashed var(--hair-soft);font-family:var(--mono);font-size:12px;
   font-variant-numeric:tabular-nums;
 }
-.rows li:first-child{border-top:0}
+.day-rows li:first-child{border-top:0}
 .h-time{color:var(--ink-2);grid-column:1;grid-row:1}
 .rows .chip{grid-column:2;grid-row:1;justify-self:end}
 .rows .del{grid-column:3;grid-row:1}
@@ -671,6 +707,14 @@ function fmtWhen(date){
   if(date.toDateString() === yesterday.toDateString()) return "Yesterday " + fmtClock(date);
   return DAY_ABBR[date.getDay()] + " " + date.toLocaleDateString([], {month:"short", day:"numeric"}) + ", " + fmtClock(date);
 }
+/* date-only version of fmtWhen, for a day-group heading rather than a single moment */
+function fmtDayHeading(date){
+  var now = new Date();
+  if(date.toDateString() === now.toDateString()) return "Today";
+  var yesterday = new Date(now.getTime() - 86400000);
+  if(date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return DAY_ABBR[date.getDay()] + " " + date.toLocaleDateString([], {month:"short", day:"numeric"});
+}
 function fmtAgo(date){
   var mins = Math.round((Date.now() - date.getTime())/60000);
   if(mins < 1) return "just now";
@@ -717,26 +761,13 @@ function sliderCfg(t){
 
 /* ---------------- panel markup ---------------- */
 
-function tickScale(name, min, max, step, unit, banded){
-  var span = max - min, marks = [], v;
-  if(banded){
-    /* a band: both ends get a mark, and the round numbers between them only when
-       they don't crowd either end. A band can start at 0 and still need this. */
-    marks.push(min);
-    for(v = Math.ceil((min + step*0.6) / step) * step; v < max; v += step) marks.push(v);
-    if(marks.length > 1 && max - marks[marks.length-1] < step*0.6) marks.pop();
-    if(marks[marks.length-1] !== max) marks.push(max);
-  } else {
-    /* the plain scales — hours, minutes — exactly as they have always been */
-    for(v = 0; v <= max; v += step) marks.push(v);
-  }
-
+function tickScale(name, max, step, unit){
   var out = '<div class="ticks">';
-  marks.forEach(function(v){
-    var pos = "calc(16px + " + (span ? (v - min)/span : 0) + " * (100% - 32px))";
+  for(var v = 0; v <= max; v += step){
+    var pos = "calc(16px + " + (max ? v/max : 0) + " * (100% - 32px))";
     out += '<button type="button" class="tick" data-tick="' + name + '" data-v="' + v + '" style="left:' + pos + '"' +
            ' aria-label="Set ' + name + ' to ' + v + unit + '">' + v + '</button>';
-  });
+  }
   return out + '</div>';
 }
 
@@ -778,47 +809,56 @@ function percentChunks(key){
   return out.length ? out : [{ min:floor, max:100 }];
 }
 
-/* enough marks to aim by, without crowding a narrow band */
-function tickStepFor(span){ return span <= 10 ? 2 : span <= 30 ? 5 : 10; }
-
 function chunkIndexFor(key, value){
   var chunks = percentChunks(key), i;
   for(i = 0; i < chunks.length; i++) if(value >= chunks[i].min && value <= chunks[i].max) return i;
   return value > chunks[chunks.length-1].max ? chunks.length - 1 : 0;
 }
 
-/* the percent slider is rebuilt when the form opens, because its floor moves with
-   the data — unlike the time sliders, whose range only depends on the settings */
+/* The percent field is free-text now — typing is never blocked, 0-100 is always
+   reachable. Bands only drive two cosmetic things, refreshed against the field's
+   current value whenever it changes: which quick-fill chip reads as selected, and
+   whether the floor note shows its usual explanation or a "that's lower than last
+   time" flag. Chips remain a shortcut to fill the field, not a constraint on it. */
 function applyPercentRange(panel, key){
   var inp = panel.querySelector("#" + key + "-percent");
   if(!inp) return;
+  var digits = inp.value.replace(/[^0-9]/g, "").slice(0, 3);
+  if(digits !== ""){
+    digits = String(clamp(parseInt(digits, 10), 0, 100));
+  }
+  if(digits !== inp.value) inp.value = digits;
+  var val = digits === "" ? 0 : parseInt(digits, 10);
+
   var floor = percentFloor(key);
   var chunks = percentChunks(key);
-  var idx = chunkIdx[key] = clamp(chunkIdx[key] || 0, 0, chunks.length - 1);
-  var band = chunks[idx];
-  var prev = parseInt(inp.value, 10);
+  var idx = chunkIdx[key] = chunkIndexFor(key, val);
+  /* a value below the floor isn't inside any of the floor-anchored chips — don't
+     highlight the nearest one as if it were, that's worse than highlighting none */
+  var inBand = chunks[idx] && val >= chunks[idx].min && val <= chunks[idx].max;
 
   var row = panel.querySelector('[data-slot="chunks"]');
   if(row){
     row.hidden = chunks.length < 2;
     row.innerHTML = chunks.length < 2 ? "" : chunks.map(function(c, i){
-      return '<button type="button" class="chunk' + (i === idx ? " on" : "") + '" data-act="chunk" data-i="' + i + '"' +
-             ' aria-pressed="' + (i === idx) + '" aria-label="Log between ' + c.min + ' and ' + c.max + ' percent">' +
+      var on = inBand && i === idx;
+      return '<button type="button" class="chunk' + (on ? " on" : "") + '" data-act="chunk" data-i="' + i + '"' +
+             ' aria-pressed="' + on + '" aria-label="Fill in ' + c.min + ' percent">' +
              c.min + '–' + c.max + '</button>';
     }).join("");
   }
 
-  inp.min = String(band.min);
-  inp.max = String(band.max);
-  var ticks = inp.parentNode.querySelector(".ticks");
-  if(ticks) ticks.outerHTML = tickScale("percent", band.min, band.max, tickStepFor(band.max - band.min), "%", true);
-  inp.value = String(clamp(isFinite(prev) ? prev : band.min, band.min, band.max));
-
   var note = panel.querySelector('[data-slot="pctnote"]');
   if(!note) return;
-  if(floor > 0){
+  if(floor > 0 && digits !== "" && val < floor){
     note.hidden = false;
-    note.innerHTML = "Starts at <b>" + floor + "%</b> — this " + esc(META[key].noun) +
+    note.className = "range-note warn";
+    note.innerHTML = "<b>" + val + "%</b> is below your last reading of <b>" + floor + "%</b> — double-check before saving, or " +
+      '<button type="button" class="linkish" data-act="full-range">use the full scale</button> to match the chips.';
+  } else if(floor > 0){
+    note.hidden = false;
+    note.className = "range-note";
+    note.innerHTML = "Starts around <b>" + floor + "%</b> — this " + esc(META[key].noun) +
       " hasn't reset yet, so usage can't have gone down. " +
       '<button type="button" class="linkish" data-act="full-range">Use the full scale</button>';
   } else {
@@ -836,12 +876,25 @@ function panelHTML(key){
           '<label for="' + key + '-' + name + '">' + label + '</label>' +
           '<output id="' + key + '-' + name + '-out" for="' + key + '-' + name + '">0' + unit + '</output>' +
         '</div>' +
-        (name === "percent" ? '<div class="chunks" data-slot="chunks" hidden></div>' : '') +
         '<input type="range" id="' + key + '-' + name + '" data-slider="' + name + '" min="0" max="' + max + '" step="1" value="0">' +
-        tickScale(name, 0, max, step, unit, false) +
-        (name === "percent" ? '<p class="range-note" data-slot="pctnote" hidden></p>' : '') +
+        tickScale(name, max, step, unit) +
       '</div>';
   };
+
+  /* Percent is typed, not dragged: the chips fill a starting value in one tap (see
+     applyPercentRange for how the bands and the floor note are picked), and the field
+     itself always takes any 0-100 value directly, keyboard and all. */
+  var pctField = '' +
+    '<div class="field">' +
+      '<div class="field-head"><label for="' + key + '-percent">Percent used</label></div>' +
+      '<div class="chunks" data-slot="chunks" hidden></div>' +
+      '<div class="pctfield">' +
+        '<input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="3" ' +
+          'id="' + key + '-percent" data-slider="percent" min="0" max="100" value="0" aria-label="Percent used">' +
+        '<span class="suffix">%</span>' +
+      '</div>' +
+      '<p class="range-note" data-slot="pctnote" hidden></p>' +
+    '</div>';
 
   /* the weekly reset comes from the slot in Settings, so that card only logs a percentage.
      The session's do get sliders, but they stay folded away while the reset they were
@@ -856,7 +909,7 @@ function panelHTML(key){
 
   var formIntro = key === "weekly"
     ? "Just the percentage. Time until reset comes from your weekly slot, and the moment you tap Save anchors the maths."
-    : "Read the percentage off Claude, pick the band it lands in, and nudge. The countdown comes from the reset you already logged — unfold it only if that reset moved.";
+    : "Read the percentage off Claude, tap a chip to land close, then type the exact number. The countdown comes from the reset you already logged — unfold it only if that reset moved.";
 
   return '' +
   '<section class="panel" data-key="' + key + '">' +
@@ -883,7 +936,7 @@ function panelHTML(key){
     '<form class="logform" data-slot="form" hidden>' +
       '<p class="form-title">New reading<span>' + formIntro + '</span></p>' +
       timeFields +
-      f("percent", "Percent used", 100, "%", 10) +
+      pctField +
       '<div class="preview" data-slot="preview"></div>' +
       '<div class="form-actions">' +
         '<button type="button" class="btn" data-act="cancel">Cancel</button>' +
@@ -902,11 +955,14 @@ function panelHTML(key){
 
 /* ---------------- rendering ---------------- */
 
-var expanded = { session:false, weekly:false };
+var expanded = { session:false, weekly:false };    /* are all day-groups shown, past the first GROUP_LIMIT */
+var dayOpen   = { session:{}, weekly:{} };         /* explicit open/closed overrides, keyed by day heading */
 var fullRange = { session:false, weekly:false };   /* the escape hatch out of a trimmed percent scale */
-var chunkIdx  = { session:0, weekly:0 };           /* which percent band the slider spans */
+var chunkIdx  = { session:0, weekly:0 };           /* which percent band is highlighted as a quick-fill */
 var timeOpen  = { session:true, weekly:true };     /* are the session's time sliders unfolded */
-var ROW_LIMIT = 5;
+var GROUP_LIMIT = 10;       /* day-groups shown before "Show earlier days" */
+var OPEN_BY_DEFAULT = 2;    /* this many of the most recent groups start expanded */
+var SPARK_RAW_LIMIT = 60;   /* past this many readings the sparkline plots one point per day instead */
 
 function render(){
   KEYS.forEach(renderPanel);
@@ -1013,6 +1069,27 @@ function factsHTML(rows, warn){
   }).join("");
 }
 
+/* newest-first entries, bucketed by calendar day. Each bucket keeps the day's
+   entries in the same newest-first order they arrived in. */
+function groupByDay(newest){
+  var groups = [], byKey = {};
+  newest.forEach(function(e){
+    var d = new Date(e.timestamp);
+    var dayKey = d.toDateString();
+    var g = byKey[dayKey];
+    if(!g){ g = { key:dayKey, date:d, entries:[] }; byKey[dayKey] = g; groups.push(g); }
+    g.entries.push(e);
+  });
+  return groups;
+}
+
+/* explicit per-day overrides win; absent one, the most recent OPEN_BY_DEFAULT
+   groups start open and the rest start collapsed */
+function dayOpenFor(key, dayKey, groupIndex){
+  var ov = dayOpen[key][dayKey];
+  return ov !== undefined ? ov : groupIndex < OPEN_BY_DEFAULT;
+}
+
 function renderHistory(key, panel, t){
   var spark = panel.querySelector('[data-slot="spark"]');
   var rows = panel.querySelector('[data-slot="rows"]');
@@ -1026,26 +1103,55 @@ function renderHistory(key, panel, t){
     more.hidden = true;
     return;
   }
-  var newest = hist.slice().reverse();
-  var shown = expanded[key] ? newest : newest.slice(0, ROW_LIMIT);
-  rows.innerHTML = shown.map(function(e){
-    var p = paceOfEntry(e, t.duration_hours);
-    var cls = paceClass(p);
-    var pl = (p === null || !isFinite(p)) ? "n/a" : p.toFixed(2) + "×";
-    return '<li>' +
-      '<span class="h-time">' + esc(fmtWhen(new Date(e.timestamp))) + '</span>' +
-      '<span class="h-main">' + esc(e.percent_used) + '% <em>used · ' + esc(fmtDuration(e.time_until_reset_minutes)) + ' left · reset ' + esc(fmtClock(new Date(e.computed_reset_time))) + '</em></span>' +
-      '<span class="chip small ' + cls + '">' + pl + '</span>' +
-      '<button class="del" data-act="del" data-ts="' + esc(e.timestamp) + '" title="Delete this reading" aria-label="Delete reading from ' + esc(fmtWhen(new Date(e.timestamp))) + '">×</button>' +
-      '</li>';
+
+  var groups = groupByDay(hist.slice().reverse());
+  var shownGroups = expanded[key] ? groups : groups.slice(0, GROUP_LIMIT);
+
+  rows.innerHTML = shownGroups.map(function(g, gi){
+    var open = dayOpenFor(key, g.key, gi);
+    var entriesHtml = g.entries.map(function(e){
+      var p = paceOfEntry(e, t.duration_hours);
+      var cls = paceClass(p);
+      var pl = (p === null || !isFinite(p)) ? "n/a" : p.toFixed(2) + "×";
+      return '<li>' +
+        '<span class="h-time">' + esc(fmtWhen(new Date(e.timestamp))) + '</span>' +
+        '<span class="h-main">' + esc(e.percent_used) + '% <em>used · ' + esc(fmtDuration(e.time_until_reset_minutes)) + ' left · reset ' + esc(fmtClock(new Date(e.computed_reset_time))) + '</em></span>' +
+        '<span class="chip small ' + cls + '">' + pl + '</span>' +
+        '<button class="del" data-act="del" data-ts="' + esc(e.timestamp) + '" title="Delete this reading" aria-label="Delete reading from ' + esc(fmtWhen(new Date(e.timestamp))) + '">×</button>' +
+        '</li>';
+    }).join("");
+    return '<li class="day">' +
+      '<button type="button" class="day-head" data-act="day" data-day="' + esc(g.key) + '" aria-expanded="' + open + '">' +
+        '<span class="day-date">' + esc(fmtDayHeading(g.date)) + '</span>' +
+        '<span class="day-count">' + g.entries.length + (g.entries.length === 1 ? " reading" : " readings") + '</span>' +
+      '</button>' +
+      '<ol class="day-rows"' + (open ? "" : " hidden") + '>' + entriesHtml + '</ol>' +
+    '</li>';
   }).join("");
 
-  if(newest.length > ROW_LIMIT){
+  if(groups.length > GROUP_LIMIT){
     more.hidden = false;
-    more.textContent = expanded[key] ? "Show fewer" : "Show all " + newest.length + " readings";
+    more.textContent = expanded[key] ? "Show fewer days" : "Show " + (groups.length - GROUP_LIMIT) + " earlier days";
   } else {
     more.hidden = true;
   }
+}
+
+/* past SPARK_RAW_LIMIT readings the chart is too dense to plot one point per
+   reading — the 340px-wide svg would give each one well under 6px — so it falls
+   back to one point per calendar day, using that day's last reading (a real
+   logged value, not a synthetic average) as the point. */
+function downsampleDaily(pts){
+  if(pts.length <= SPARK_RAW_LIMIT) return pts;
+  var days = [], byKey = {};
+  pts.forEach(function(pt){
+    var dayKey = new Date(pt.t).toDateString();
+    var d = byKey[dayKey];
+    if(!d){ d = { t:pt.t, p:pt.p, e:pt.e, n:0 }; byKey[dayKey] = d; days.push(d); }
+    d.t = pt.t; d.p = pt.p; d.e = pt.e;   // the day's last reading wins
+    d.n++;
+  });
+  return days;
 }
 
 function sparkHTML(hist, durationHours){
@@ -1056,6 +1162,12 @@ function sparkHTML(hist, durationHours){
     if(p !== null && isFinite(p)) pts.push({ t:new Date(e.timestamp).getTime(), p:p, e:e });
   });
   if(!pts.length) return '<p class="mini-empty">No entry yet has any elapsed window to pace against.</p>';
+
+  var rawCount = pts.length;
+  pts = downsampleDaily(pts);
+  var note = pts.length < rawCount
+    ? '<p class="mini-note">One point per day — ' + rawCount + ' readings total. Hover a point for the exact reading.</p>'
+    : '';
 
   var W=340,H=96,L=32,R=8,T=12,B=18;
   var iw=W-L-R, ih=H-T-B;
@@ -1080,11 +1192,13 @@ function sparkHTML(hist, durationHours){
   pts.forEach(function(pt,i){
     var last = i === pts.length-1;
     var cls = paceClass(pt.p);
+    var label = esc(fmtWhen(new Date(pt.e.timestamp))) + " — " + esc(pt.e.percent_used) + "% used, " + pt.p.toFixed(2) + "× pace" +
+      (pt.n > 1 ? " (last of " + pt.n + " that day)" : "");
     svg += '<circle class="dot ' + cls + '" cx="' + X(pt).toFixed(1) + '" cy="' + Y(pt.p).toFixed(1) + '" r="' + (last?4.2:2.6) + '">' +
-           '<title>' + esc(fmtWhen(new Date(pt.e.timestamp))) + " — " + esc(pt.e.percent_used) + "% used, " + pt.p.toFixed(2) + "× pace" + '</title></circle>';
+           '<title>' + label + '</title></circle>';
   });
   svg += '</svg>';
-  return svg;
+  return note + svg;
 }
 
 /* ---------------- form ---------------- */
@@ -1121,9 +1235,11 @@ function syncForm(panel){
   var t = state.trackers[key];
   var v = formValues(panel);
 
-  panel.querySelectorAll("input[data-slider]").forEach(function(inp){
+  /* percent isn't a range input any more — applyPercentRange owns its own
+     chips/note refresh, so this loop only has sliders (hours/minutes) left to do */
+  panel.querySelectorAll('input[type="range"][data-slider]').forEach(function(inp){
     var name = inp.getAttribute("data-slider");
-    var unit = name === "days" ? "d" : name === "hours" ? "h" : name === "minutes" ? "m" : "%";
+    var unit = name === "days" ? "d" : name === "hours" ? "h" : "m";
     var out = panel.querySelector("#" + key + "-" + name + "-out");
     if(out) out.textContent = inp.value + unit;
     var lo = parseInt(inp.min,10) || 0, hi = parseInt(inp.max,10) || 1;
@@ -1192,11 +1308,9 @@ function openForm(panel){
   var seedPct = (s && !s.expired && isNum(t.percent_used)) ? t.percent_used : 0;
 
   fullRange[key] = false;
-  chunkIdx[key] = 0;
   /* the reset this reading counts down to is already known while it is in the future,
      so the time sliders start folded away; a stale window needs them back */
   timeOpen[key] = !(key === "session" && s && !s.expired);
-  applyPercentRange(panel, key);
   applyTimeFold(panel, key);
 
   var setSlider = function(name, val){
@@ -1206,6 +1320,7 @@ function openForm(panel){
   setSlider("hours", Math.floor(seedMins/60));
   setSlider("minutes", seedMins % 60);
   setSlider("percent", seedPct);
+  applyPercentRange(panel, key);   /* reads the value setSlider just seeded, builds chips/note from it */
 
   form.hidden = false;
   btn.hidden = true;
@@ -1744,7 +1859,21 @@ grid.innerHTML = KEYS.map(panelHTML).join("");
 
 grid.addEventListener("input", function(ev){
   var inp = ev.target;
-  if(inp.matches("input[data-slider]")) syncForm(inp.closest(".panel"));
+  if(!inp.matches("input[data-slider]")) return;
+  var panel = inp.closest(".panel");
+  if(inp.getAttribute("data-slider") === "percent") applyPercentRange(panel, panel.getAttribute("data-key"));
+  syncForm(panel);
+});
+/* typing into the percent field and tabbing away without entering anything leaves it
+   blank; land back on the floor (or 0) rather than submitting an empty reading */
+grid.addEventListener("focusout", function(ev){
+  var inp = ev.target;
+  if(!(inp.matches('input[data-slider="percent"]') && inp.value === "")) return;
+  var panel = inp.closest(".panel");
+  var key = panel.getAttribute("data-key");
+  inp.value = String(percentFloor(key));
+  applyPercentRange(panel, key);
+  syncForm(panel);
 });
 grid.addEventListener("click", function(ev){
   var tick = ev.target.closest("[data-tick]");
@@ -1762,18 +1891,16 @@ grid.addEventListener("click", function(ev){
   else if(act === "cancel") closeForm(panel);
   else if(act === "full-range"){
     var fk = panel.getAttribute("data-key");
-    var fi = panel.querySelector("#" + fk + "-percent");
-    var held = fi ? parseInt(fi.value, 10) : 0;
-    fullRange[fk] = true;
-    chunkIdx[fk] = chunkIndexFor(fk, held);   /* widening the scale shouldn't move the reading */
+    fullRange[fk] = true;   /* the typed value is untouched — this only widens which chips show */
     applyPercentRange(panel, fk);
     syncForm(panel);
   }
   else if(act === "chunk"){
     var ck = panel.getAttribute("data-key");
-    chunkIdx[ck] = parseInt(btn.getAttribute("data-i"), 10) || 0;
+    var i = parseInt(btn.getAttribute("data-i"), 10) || 0;
+    var chunk = percentChunks(ck)[i];
     var pi = panel.querySelector("#" + ck + "-percent");
-    if(pi) pi.value = String(percentChunks(ck)[chunkIdx[ck]].min);   /* land at the band's floor */
+    if(pi && chunk) pi.value = String(chunk.min);   /* fill the field at the band's floor */
     applyPercentRange(panel, ck);
     syncForm(panel);
   }
@@ -1787,6 +1914,11 @@ grid.addEventListener("click", function(ev){
     var k = panel.getAttribute("data-key");
     expanded[k] = !expanded[k];
     renderPanel(k);
+  } else if(act === "day"){
+    var dk = panel.getAttribute("data-key");
+    var wasOpen = btn.getAttribute("aria-expanded") === "true";
+    dayOpen[dk][btn.getAttribute("data-day")] = !wasOpen;
+    renderHistory(dk, panel, state.trackers[dk]);
   } else if(act === "del"){
     var ts = btn.getAttribute("data-ts");
     var key = panel.getAttribute("data-key");
