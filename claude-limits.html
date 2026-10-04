@@ -11,7 +11,9 @@
 <meta name="apple-mobile-web-app-title" content="Limit Pace">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#EFF1F0" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0D1211" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<!-- a chosen theme applies before first paint, so a dark-theme launch never flashes light -->
+<script>try{var t=localStorage.getItem("claude-limits.v1.theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 <link rel="apple-touch-icon" href="data:image/png;base64,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">
 <link rel="icon" type="image/png" href="data:image/png;base64,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">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,28 +34,31 @@
   --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   color-scheme:light;
 }
+/* Dark is true black: #000 background switches OLED pixels off entirely. Cards sit one
+   step above it so they still read as surfaces, and since no shadow can show on black,
+   their 1px hairline border does that work instead. */
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#0D1211; --surface:#161D1C; --sunk:#1D2625; --hair:#28322F; --hair-soft:#212B29;
+    --bg:#000000; --surface:#0B0F0E; --sunk:#141A19; --hair:#232B29; --hair-soft:#181F1E;
     --ink:#E7EDEB; --ink-2:#9AA8A5; --ink-3:#75827F;
     --accent:#31BFA6; --accent-ink:#06201C; --accent-soft:#123029;
     --cool:#74B4D8; --cool-soft:#132734;
     --neutral-pace:#31BFA6; --neutral-soft:#123029;
     --warm:#E3A93C; --warm-soft:#33280F;
     --hot:#E8705C; --hot-soft:#361B16;
-    --track:#242E2C; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px -14px rgba(0,0,0,.8);
+    --track:#1F2725; --shadow:none;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0D1211; --surface:#161D1C; --sunk:#1D2625; --hair:#28322F; --hair-soft:#212B29;
+  --bg:#000000; --surface:#0B0F0E; --sunk:#141A19; --hair:#232B29; --hair-soft:#181F1E;
   --ink:#E7EDEB; --ink-2:#9AA8A5; --ink-3:#75827F;
   --accent:#31BFA6; --accent-ink:#06201C; --accent-soft:#123029;
   --cool:#74B4D8; --cool-soft:#132734;
   --neutral-pace:#31BFA6; --neutral-soft:#123029;
   --warm:#E3A93C; --warm-soft:#33280F;
   --hot:#E8705C; --hot-soft:#361B16;
-  --track:#242E2C; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px -14px rgba(0,0,0,.8);
+  --track:#1F2725; --shadow:none;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -451,6 +456,15 @@ dialog::backdrop{background:rgba(10,16,15,.45);backdrop-filter:blur(2px)}
     <button class="btn ghost" id="btn-close-settings">Close</button>
   </div>
   <div class="dlg-body">
+    <div class="set">
+      <label id="theme-label">Appearance</label>
+      <div class="chunks" role="group" aria-labelledby="theme-label" id="theme-seg">
+        <button type="button" class="chunk" data-theme-choice="system">System</button>
+        <button type="button" class="chunk" data-theme-choice="light">Light</button>
+        <button type="button" class="chunk" data-theme-choice="dark">Dark</button>
+      </div>
+      <p class="hint">Dark is true black, so an OLED screen switches those pixels off. Saved on this device only.</p>
+    </div>
     <div class="set">
       <label for="s-dur">Session window (hours)</label>
       <input type="number" id="s-dur" min="0.5" max="48" step="0.5">
@@ -1940,6 +1954,32 @@ function syncBoot(){
 
 /* ---------------- toast ---------------- */
 
+/* ---------------- theme ----------------
+   A per-device preference, kept apart from the synced state on purpose: the phone can
+   be dark while the laptop follows the system. The <head> script applies it before
+   first paint; this keeps the switch, the attribute and the browser chrome in step. */
+var THEME_KEY = STORE_KEY + ".theme";
+var THEME_BG = { light:"#EFF1F0", dark:"#000000" };
+
+function currentTheme(){
+  var t = lsGet(THEME_KEY);
+  return t === "light" || t === "dark" ? t : "system";
+}
+function applyTheme(choice){
+  if(choice === "light" || choice === "dark") document.documentElement.setAttribute("data-theme", choice);
+  else document.documentElement.removeAttribute("data-theme");
+  /* the browser/status-bar tint follows the choice, or the system when there isn't one */
+  document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){
+    var sysDark = /dark/.test(m.getAttribute("media") || "");
+    m.setAttribute("content", choice === "system" ? (sysDark ? THEME_BG.dark : THEME_BG.light) : THEME_BG[choice]);
+  });
+  document.querySelectorAll("[data-theme-choice]").forEach(function(b){
+    var on = b.getAttribute("data-theme-choice") === choice;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+}
+
 var toastTimer = null, toastEl = null;
 function toast(msg, action){
   if(toastEl) toastEl.remove();
@@ -2088,6 +2128,14 @@ grid.addEventListener("click", function(ev){
   } else if(act === "del"){
     deleteReading(panel.getAttribute("data-key"), btn.getAttribute("data-ts"));
   }
+});
+applyTheme(currentTheme());
+document.getElementById("theme-seg").addEventListener("click", function(ev){
+  var b = ev.target.closest("[data-theme-choice]");
+  if(!b) return;
+  var choice = b.getAttribute("data-theme-choice");
+  if(choice === "system") lsDel(THEME_KEY); else lsSet(THEME_KEY, choice);
+  applyTheme(choice);
 });
 document.getElementById("logbar").addEventListener("click", function(ev){
   var b = ev.target.closest("[data-log]");
