@@ -204,6 +204,10 @@ button{font:inherit;cursor:pointer}
 .verdict b.on{color:var(--neutral-pace)}
 .verdict b.over{color:var(--warm)}
 .verdict b.hot{color:var(--hot)}
+.verdict .vstale{color:var(--ink-3)}
+.verdict .vsub{display:block;margin-top:3px;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+/* a live pace from an old reading can only read low, so it steps back */
+.chip.stale{opacity:.55;border-style:dashed}
 
 /* ---- form ---- */
 .logform{display:flex;flex-direction:column;gap:16px;background:var(--sunk);box-shadow:inset 0 0 0 1px var(--sunk-edge);border-radius:12px;padding:15px 14px 14px;margin-top:-3px}
@@ -350,6 +354,8 @@ input[type=range]::-moz-range-thumb{
 /* hover-only devices: on iOS a tapped element keeps :hover, so after a delete the next
    row's × would sit there looking armed */
 @media (hover:hover){.del:hover{color:var(--hot);background:var(--hot-soft)}}
+.day.latest .day-rows{margin:0}
+.more:not([hidden]) + .more{margin-left:18px}
 .more{align-self:flex-start;margin-top:9px;font-size:12px;color:var(--accent);background:none;border:0;padding:4px 0;font-weight:500}
 
 /* ---- dialog ---- */
@@ -721,15 +727,24 @@ function stats(t){
   var now = Date.now();
   var leftNow = Math.round((reset.getTime() - now) / 60000);
   var elapsedNowPct = durMin > 0 ? clamp(((durMin - leftNow) / durMin) * 100, 0, 100) : 0;
+  /* Live pace holds the last reading's percent against the window as it stands now.
+     It can only assume nothing was used since the log, so between logs it only falls:
+     it's a floor, and the older the reading the less it says — hence ageMin/stale. */
+  var livePace = elapsedNowPct > 0 ? (t.percent_used / elapsedNowPct) : null;
+  var ageMin = Math.max(0, (now - loggedAt.getTime()) / 60000);
   return {
     loggedAt: loggedAt, reset: reset, durMin: durMin,
     leftAtLog: left, elapsedMin: elapsedMin, elapsedPct: elapsedPct,
     percentUsed: t.percent_used, pace: pace,
     leftNow: leftNow, elapsedNowPct: elapsedNowPct,
+    livePace: livePace, ageMin: ageMin, stale: ageMin > durMin * STALE_FRAC,
+    headroom: elapsedNowPct - t.percent_used,           // percent points you can still use and stay on pace
     expired: leftNow <= 0,
     overWindow: left > durMin
   };
 }
+/* past this share of the window since the last log, the live pace is too old to trust */
+var STALE_FRAC = 0.25;
 function paceOfEntry(entry, durationHours){
   var durMin = durationHours * 60;
   var elapsedPct = durMin > 0 ? ((durMin - entry.time_until_reset_minutes) / durMin) * 100 : 0;
@@ -746,6 +761,14 @@ function paceClass(p){
 function paceLabel(p){
   if(p === null || !isFinite(p)) return "Pace n/a";
   return p.toFixed(2).replace(/0$/,"") + "× pace";
+}
+/* the live chip: the pace, and how old the reading behind it is */
+function livePaceLabel(s){
+  var p = s.livePace;
+  if(p === null || !isFinite(p)) return "Pace n/a";
+  var m = Math.round(s.ageMin);
+  var age = m < 1 ? "just now" : m < 60 ? m + "m ago" : m < 1440 ? Math.floor(m/60) + "h ago" : Math.floor(m/1440) + "d ago";
+  return p.toFixed(2).replace(/0$/,"") + "× · " + age;
 }
 var PACE_WORDS = { under:"Under pace", on:"On pace", over:"Ahead of the clock", hot:"Burning fast" };
 
@@ -1028,6 +1051,7 @@ function panelHTML(key){
       '<div class="spark" data-slot="spark"></div>' +
       '<ol class="rows" data-slot="rows"></ol>' +
       '<button class="more" data-act="more" hidden></button>' +
+      '<button class="more" data-act="hist" hidden></button>' +
     '</div>' +
   '</section>';
 }
@@ -1039,6 +1063,7 @@ var dayOpen   = { session:{}, weekly:{} };         /* explicit open/closed overr
 var fullRange = { session:false, weekly:false };   /* the escape hatch out of a trimmed percent scale */
 var chunkIdx  = { session:0, weekly:0 };           /* which percent band is highlighted as a quick-fill */
 var timeOpen  = { session:true, weekly:true };     /* are the session's time sliders unfolded */
+var histOpen  = { session:false, weekly:false };   /* full history list, or just the latest reading — folded on every load */
 var GROUP_LIMIT = 10;       /* day-groups shown before "Show earlier days" */
 var OPEN_BY_DEFAULT = 2;    /* this many of the most recent groups start expanded */
 var SPARK_RAW_LIMIT = 60;   /* past this many readings the sparkline plots one point per day instead */
@@ -1064,7 +1089,7 @@ function renderPanel(key){
   var verdict = q("verdict");
 
   if(!s){
-    chip.className = "chip"; chip.textContent = "No data yet";
+    chip.className = "chip"; chip.textContent = "No data yet"; chip.removeAttribute("title");
     q("big").textContent = "—";
     q("biglabel").textContent = "nothing logged yet";
     verdict.textContent = "Log a reading to start tracking pace.";
@@ -1077,16 +1102,21 @@ function renderPanel(key){
     return;
   }
 
-  var pc = paceClass(s.pace);
-  chip.className = "chip " + pc;
-  chip.textContent = paceLabel(s.pace);
+  /* chip, verdict and bar colour all read the live pace, so they move with the clock;
+     history rows and the chart keep each reading's pace at the moment it was logged */
+  var pc = paceClass(s.livePace);
+  chip.className = "chip " + pc + (s.stale ? " stale" : "");
+  chip.textContent = livePaceLabel(s);
+  chip.title = s.stale
+    ? "Live pace from an old reading. It assumes nothing was used since, so log a fresh one."
+    : "Live pace: your last reading against the window as it stands now.";
 
   /* Lead with what's true right now — how long until the reset, and whether the burn
      is keeping pace — rather than a percentage that may be hours old. That reading
      still shows: on the "limit used" bar, and in the verdict line. */
-  var used = Math.round(s.percentUsed), gone = Math.round(s.elapsedPct);
+  var used = Math.round(s.percentUsed), gone = Math.round(s.elapsedNowPct);
   if(s.expired){
-    chip.className = "chip"; chip.textContent = "Old window";   /* its pace says nothing about this one */
+    chip.className = "chip"; chip.textContent = "Old window"; chip.removeAttribute("title");   /* its pace says nothing about this one */
     q("big").textContent = "Reset";
     q("biglabel").textContent = "at " + fmtWhen(s.reset);
     verdict.innerHTML = '<b class="hot">New window</b> — your last reading (' + used +
@@ -1100,19 +1130,36 @@ function renderPanel(key){
     } else if(!pc){
       verdict.innerHTML = '<b>Too early for pace</b> — ' + used + '% used, and the window has barely started.';
     } else {
-      var v = '<b class="' + pc + '">' + PACE_WORDS[pc] + '</b> — ' + used + '% used with ' + gone + '% of the window gone.';
-      /* projected from the last reading, so for an older reading it can already be behind us */
-      var full = projectedExhaustion(s), past = full.getTime() <= Date.now();
-      if(pc === "hot") v += past
-        ? ' At that rate you’d be at <b>100% by now</b> — log a fresh reading.'
-        : ' At this rate you hit 100% around <b>' + esc(fmtWhen(full)) + '</b>, before the reset.';
-      else if(pc === "over") v += past ? ' At that rate you’d be near 100% by now.' : ' Full burn around ' + esc(fmtWhen(full)) + '.';
+      /* lead with room left: the percent you can still spend and land on the on-pace
+         line now, or how long to ease off until the clock catches up with you */
+      var room = Math.round(s.headroom), v;
+      if(s.percentUsed >= 100){
+        v = '<b class="hot">Limit reached</b> — nothing left until the reset.';
+      } else {
+        v = '<b class="' + pc + '">' + PACE_WORDS[pc] + '</b> — ';
+        if(room > 0) v += 'you can use about <b>' + room + '% more</b> and still be on pace right now.';
+        else if(room === 0) v += 'right on the on-pace line now.';
+        else v += 'you’re <b>' + (-room) + '% over</b> the on-pace line. Ease off for about <b>' +
+          esc(fmtDuration(-s.headroom / 100 * s.durMin)) + '</b> to get back on pace.';
+        /* projected from the last reading's own pace, not the live one — a live pace only
+           falls between logs, so projecting from it would promise more time than there is.
+           For an older reading the projected moment can already be behind us. */
+        var full = projectedExhaustion(s), past = full.getTime() <= Date.now();
+        if(pc === "hot") v += past
+          ? ' At your logged rate you’d be at <b>100% by now</b>.'
+          : ' At your logged rate you hit 100% around <b>' + esc(fmtWhen(full)) + '</b>, before the reset.';
+        else if(pc === "over") v += past ? ' At your logged rate you’d be near 100% by now.' : ' Full burn around ' + esc(fmtWhen(full)) + '.';
+      }
+      /* the live figure assumes nothing was used since the log, so it can only read low */
+      if(s.stale) v += ' <span class="vstale">Your last reading is ' + esc(fmtAgo(s.loggedAt).replace(/ ago$/, "")) +
+        ' old, so this likely reads low — log a fresh one.</span>';
+      v += '<span class="vsub">' + used + '% used · ' + gone + '% of the window gone</span>';
       verdict.innerHTML = v;
     }
   }
 
   var usedW = clamp(s.percentUsed, 0, 100);
-  var elapsedW = clamp(s.elapsedPct, 0, 100);
+  var elapsedW = clamp(s.elapsedNowPct, 0, 100);   /* to now, like the verdict — not to when you logged */
   q("gauge").innerHTML = '' +
     '<div class="bars">' +
       '<div class="bar-row">' +
@@ -1120,8 +1167,8 @@ function renderPanel(key){
         '<div class="track"><div class="fill used ' + pc + '" style="width:' + usedW + '%"></div></div>' +
       '</div>' +
       '<div class="bar-row">' +
-        '<div class="bar-top"><span class="bar-label">Window elapsed</span><span class="bar-val">' + Math.round(s.elapsedPct) + '% <em>· ' +
-          esc(fmtDuration(Math.max(0,s.elapsedMin))) + ' of ' + esc(fmtDuration(s.durMin)) + '</em></span></div>' +
+        '<div class="bar-top"><span class="bar-label">Window elapsed</span><span class="bar-val">' + gone + '% <em>· ' +
+          esc(fmtDuration(clamp(s.durMin - s.leftNow, 0, s.durMin))) + ' of ' + esc(fmtDuration(s.durMin)) + '</em></span></div>' +
         '<div class="track">' +
           '<div class="fill time" style="width:' + elapsedW + '%"></div>' +
           '<div class="nowmark" style="left:' + clamp(s.elapsedNowPct,0,100) + '%" title="Where the window stands right now"></div>' +
@@ -1184,16 +1231,43 @@ function dayOpenFor(key, dayKey, groupIndex){
   return ov !== undefined ? ov : groupIndex < OPEN_BY_DEFAULT;
 }
 
+/* one reading's row. Its chip is the pace at the moment it was logged — history is a
+   record, unlike the card's live chip. withDay: no day heading above it, so say which day. */
+function entryRowHTML(e, durationHours, withDay){
+  var p = paceOfEntry(e, durationHours);
+  var cls = paceClass(p);
+  var pl = (p === null || !isFinite(p)) ? "n/a" : p.toFixed(2) + "×";
+  var when = new Date(e.timestamp);
+  return '<li>' +
+    '<span class="h-time">' + esc(withDay ? fmtDayHeading(when) + " " + fmtClock(when) : fmtClock(when)) + '</span>' +
+    '<span class="h-main">' + esc(e.percent_used) + '% <em>used · ' + esc(fmtDuration(e.time_until_reset_minutes)) + ' left · reset ' + esc(fmtClock(new Date(e.computed_reset_time))) + '</em></span>' +
+    '<span class="chip small ' + cls + '">' + pl + '</span>' +
+    '<button class="del" data-act="del" data-ts="' + esc(e.timestamp) + '" title="Delete this reading" aria-label="Delete reading from ' + esc(fmtWhen(when)) + '">×</button>' +
+    '</li>';
+}
+
 function renderHistory(key, panel, t){
   var spark = panel.querySelector('[data-slot="spark"]');
   var rows = panel.querySelector('[data-slot="rows"]');
   var more = panel.querySelector('[data-act="more"]');
+  var toggle = panel.querySelector('[data-act="hist"]');
   var hist = t.history;
 
   spark.innerHTML = sparkHTML(hist, t.duration_hours);
 
   if(!hist.length){
     rows.innerHTML = "";
+    more.hidden = true;
+    toggle.hidden = true;
+    return;
+  }
+
+  /* folded: the chart plus the newest reading only — same row, so its × still works */
+  toggle.hidden = hist.length < 2;
+  toggle.textContent = histOpen[key] ? "Show latest only" : "Show all " + hist.length + " readings";
+  if(!histOpen[key]){
+    var last = hist[hist.length - 1];
+    rows.innerHTML = '<li class="day latest"><ol class="day-rows">' + entryRowHTML(last, t.duration_hours, true) + '</ol></li>';
     more.hidden = true;
     return;
   }
@@ -1209,17 +1283,7 @@ function renderHistory(key, panel, t){
       var pp = paceOfEntry(e, t.duration_hours);
       if(pp !== null && isFinite(pp) && (peak === null || pp > peak)) peak = pp;
     });
-    var entriesHtml = g.entries.map(function(e){
-      var p = paceOfEntry(e, t.duration_hours);
-      var cls = paceClass(p);
-      var pl = (p === null || !isFinite(p)) ? "n/a" : p.toFixed(2) + "×";
-      return '<li>' +
-        '<span class="h-time">' + esc(fmtClock(new Date(e.timestamp))) + '</span>' +   /* the day heading already says which day */
-        '<span class="h-main">' + esc(e.percent_used) + '% <em>used · ' + esc(fmtDuration(e.time_until_reset_minutes)) + ' left · reset ' + esc(fmtClock(new Date(e.computed_reset_time))) + '</em></span>' +
-        '<span class="chip small ' + cls + '">' + pl + '</span>' +
-        '<button class="del" data-act="del" data-ts="' + esc(e.timestamp) + '" title="Delete this reading" aria-label="Delete reading from ' + esc(fmtWhen(new Date(e.timestamp))) + '">×</button>' +
-        '</li>';
-    }).join("");
+    var entriesHtml = g.entries.map(function(e){ return entryRowHTML(e, t.duration_hours, false); }).join("");
     return '<li class="day">' +
       '<button type="button" class="day-head" data-act="day" data-day="' + esc(g.key) + '" aria-expanded="' + open + '">' +
         '<span class="day-date">' + esc(fmtDayHeading(g.date)) + '</span>' +
@@ -2125,6 +2189,11 @@ grid.addEventListener("click", function(ev){
     timeOpen[tk] = true;
     applyTimeFold(panel, tk);
     syncForm(panel);
+  }
+  else if(act === "hist"){
+    var hk = panel.getAttribute("data-key");
+    histOpen[hk] = !histOpen[hk];
+    renderHistory(hk, panel, state.trackers[hk]);
   }
   else if(act === "more"){
     var k = panel.getAttribute("data-key");
